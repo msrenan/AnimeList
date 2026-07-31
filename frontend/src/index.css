@@ -1,0 +1,63 @@
+
+@import url('https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&display=swap');
+@import "tailwindcss";
+
+@theme {
+  /* =========================================
+     BASE: Escala de Chumbo (Dark Lead / Charcoal)
+     ========================================= */
+  --color-lead-50: #f3f4f6;
+  --color-lead-100: #e5e7eb;
+  --color-lead-200: #c8cbd2;
+  --color-lead-300: #9fa5b2;
+  --color-lead-400: #737c8e;
+  --color-lead-500: #545d6e;
+  --color-lead-600: #3f4654;
+  --color-lead-700: #313743; /* Bordas e divisores escuros */
+  --color-lead-800: #222630; /* Elevado / Hover de cards */
+  --color-lead-900: #161920; /* Fundo de Cards / Modais */
+  --color-lead-950: #0f1116; /* Fundo Principal da Aplicação */
+
+  /* =========================================
+     DETALHES: Vários Tons de Vermelho (Red / Crimson)
+     ========================================= */
+  --color-crimson-50: #fff1f2;
+  --color-crimson-100: #ffe4e6;
+  --color-crimson-200: #fecdd3;
+  --color-crimson-300: #fda4af;
+  --color-crimson-400: #f87171; /* Vermelho Suave / Ícones secundários */
+  --color-crimson-500: #ef4444; /* Vermelho Vibrante / Destaque / Hover */
+  --color-crimson-600: #dc2626; /* Vermelho Primário (Botões/Links) */
+  --color-crimson-700: #b91c1c; /* Vermelho Fechado / Pressed state */
+  --color-crimson-800: #991b1b; /* Tom Vinho / Badges escuros */
+  --color-crimson-900: #7f1d1d; /* Detalhes sutis / Bordas de destaque */
+  --color-crimson-950: #450a0a; /* Sombra / Glows de fundo em vermelho */
+
+  /* =========================================
+     MAPEAMENTO SEMÂNTICO (Atalhos rápidos)
+     ========================================= */
+  --color-app-bg: var(--color-lead-950);
+  --color-app-surface: var(--color-lead-900);
+  --color-app-surface-hover: var(--color-lead-800);
+  --color-app-border: var(--color-lead-700);
+
+  --color-brand-primary: var(--color-crimson-600);
+  --color-brand-hover: var(--color-crimson-500);
+  --color-brand-active: var(--color-crimson-700);
+  --color-brand-muted: var(--color-crimson-900);
+
+  /* =========================================
+                      FONTES
+     ========================================= */
+
+  --font-inter: "Inter", sans-serif
+}
+
+body {
+   @apply min-w-full min-h-full bg-app-bg text-lead-100 p-5
+}
+
+.navbarButton {
+   @apply w-[170px] h-[80%] p-1 hover:bg-lead-400 hover:cursor-pointer
+   rounded-[10px] transition-all text-[20px] font-semibold flex items-center justify-center gap-4
+}
