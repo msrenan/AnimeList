@@ -103,33 +103,14 @@ public class AnimeService {
                 .orElseThrow(() -> new ResourceNotFoundException("Anime (id: " + animeId + ") was not found"));
 
 
-        if (dto.season() != null) {
-            anime.setSeason(dto.season());
-        }
+        anime.setSeason(dto.season());
+        anime.setEpisode(dto.episode());
+        anime.setFinished(dto.isFinished());
+        anime.setWaiting(dto.waiting());
+        anime.setFavorite(dto.favorite());
+        anime.setRewatch(dto.rewatch());
+        anime.setTitle(dto.title());
 
-        if (dto.episode() != null) {
-            anime.setEpisode(dto.episode());
-        }
-
-        if (dto.isFinished() != null) {
-            anime.setFinished(dto.isFinished());
-        }
-
-        if (dto.waiting() != null) {
-            anime.setWaiting(dto.waiting());
-        }
-
-        if (dto.favorite() != null) {
-            anime.setFavorite(dto.favorite());
-        }
-
-        if (dto.rewatch() != null) {
-            anime.setRewatch(dto.rewatch());
-        }
-
-        if (dto.title() != null && dto.title() != "") {
-            anime.setTitle(dto.title());
-        }
 
         if (dto.releaseDay() != null) {
             anime.setReleaseDay(dto.releaseDay());
@@ -171,33 +152,13 @@ public class AnimeService {
                 .orElseThrow(() -> new ResourceNotFoundException("Anime " + title + " was not found"));
 
 
-        if (dto.season() != null) {
-            anime.setSeason(dto.season());
-        }
-
-        if (dto.episode() != null) {
-            anime.setEpisode(dto.episode());
-        }
-
-        if (dto.isFinished() != null) {
-            anime.setFinished(dto.isFinished());
-        }
-
-        if (dto.waiting() != null) {
-            anime.setWaiting(dto.waiting());
-        }
-
-        if (dto.favorite() != null) {
-            anime.setFavorite(dto.favorite());
-        }
-
-        if (dto.rewatch() != null) {
-            anime.setRewatch(dto.rewatch());
-        }
-
-        if (dto.title() != null && dto.title() != "") {
-            anime.setTitle(dto.title());
-        }
+        anime.setSeason(dto.season());
+        anime.setEpisode(dto.episode());
+        anime.setFinished(dto.isFinished());
+        anime.setWaiting(dto.waiting());
+        anime.setFavorite(dto.favorite());
+        anime.setRewatch(dto.rewatch());
+        anime.setTitle(dto.title());
 
         if (dto.releaseDay() != null) {
             anime.setReleaseDay(dto.releaseDay());

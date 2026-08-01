@@ -25,6 +25,13 @@ public class SecurityFilter extends OncePerRequestFilter {
     private AccountRepository accountRepository;
 
     @Override
+    protected boolean shouldNotFilter(HttpServletRequest request) throws ServletException {
+        String path = request.getRequestURI();
+        // Se a rota começar com /auth/, o filtro nem é executado
+        return path.startsWith("/auth/login") || path.startsWith("/auth/register");
+    }
+
+    @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain) throws ServletException, IOException {
         var token = recuperarToken(request);
 
