@@ -1,12 +1,16 @@
+import { useContext } from "react";
 import { GoHomeFill } from "react-icons/go";
 import { LuListVideo } from "react-icons/lu";
 import { MdAccountCircle, MdLocalMovies } from "react-icons/md";
 import { SlOptions } from "react-icons/sl";
 import { useNavigate } from "react-router";
+import { accountContext } from "../types/context";
 
 export default function Navbar() {
 
     const navigate  = useNavigate();
+
+    const {accountId} = useContext(accountContext);
 
     return(
         <>

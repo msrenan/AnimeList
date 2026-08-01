@@ -1,9 +1,29 @@
+import { useContext, useEffect, useState } from "react";
 import { useNavigate } from "react-router";
+import { useAuth } from "../hooks/useAuth";
+import { loginContext } from "../types/context";
 
 
 export default function Register() {
 
     const navigate = useNavigate();
+
+    const [nick, setNick] = useState<string>("");
+    const [email, setEmail] = useState<string>("");
+    const [pass, setPass] = useState<string>("");
+
+    const {register, token, accountId} = useAuth();
+
+    const {isLoggedIn, storeId} = useContext(loginContext);
+
+    useEffect(() => {
+        if (token && token != "") {
+            localStorage.setItem("AccountToken", token);
+            navigate("/home");
+            storeId(accountId);
+            isLoggedIn(true);
+        }
+    }, [token])
 
     return(
         <>
@@ -18,6 +38,7 @@ export default function Register() {
                         id={"nick"}
                         /* O truque do CSS: um espaço em branco no placeholder */
                         placeholder=" "
+                        onBlur={(e) => setNick(e.currentTarget.value)}
                         className="peer w-full rounded-lg border border-lead-700 bg-lead-900 px-4 py-2 text-[32px] text-white outline-none transition-all focus:border-lead-700 focus:ring-1 focus:ring-lead-700"
                     />
                     
@@ -27,7 +48,7 @@ export default function Register() {
                         /* Quando o input está focado */
                         peer-focus:-top-8 peer-focus:translate-y-0 peer-focus:text-[20px] peer-focus:font-medium peer-focus:text-lead-400
                         /* Quando o input NÃO está vazio (tem texto digitado) */
-                        peer-[:not(:placeholder-shown)]:-top-8 peer-[:not(:placeholder-shown)]:translate-y-0 peer-[:not(:placeholder-shown)]:text-[20px] peer-[:not(:placeholder-shown)]:text-lead-500"
+                        peer-not-placeholder-shown:-top-8 peer-not-placeholder-shown:translate-y-0 peer-not-placeholder-shown:text-[20px] peer-not-placeholder-shown:text-lead-500"
                     >
                         {"Nickname"}
                     </label>
@@ -38,6 +59,7 @@ export default function Register() {
                         id={"email"}
                         /* O truque do CSS: um espaço em branco no placeholder */
                         placeholder=" "
+                        onBlur={(e) => setEmail(e.currentTarget.value)}
                         className="peer w-full rounded-lg border border-lead-700 bg-lead-900 px-4 py-2 text-[32px] text-white outline-none transition-all focus:border-lead-700 focus:ring-1 focus:ring-lead-700"
                     />
                     
@@ -47,7 +69,7 @@ export default function Register() {
                         /* Quando o input está focado */
                         peer-focus:-top-8 peer-focus:translate-y-0 peer-focus:text-[20px] peer-focus:font-medium peer-focus:text-lead-400
                         /* Quando o input NÃO está vazio (tem texto digitado) */
-                        peer-[:not(:placeholder-shown)]:-top-8 peer-[:not(:placeholder-shown)]:translate-y-0 peer-[:not(:placeholder-shown)]:text-[20px] peer-[:not(:placeholder-shown)]:text-lead-500"
+                        peer-not-placeholder-shown:-top-8 peer-not-placeholder-shown:translate-y-0 peer-not-placeholder-shown:text-[20px] peer-not-placeholder-shown:text-lead-500"
                     >
                         {"Email"}
                     </label>
@@ -58,6 +80,7 @@ export default function Register() {
                         id={"pass"}
                         /* O truque do CSS: um espaço em branco no placeholder */
                         placeholder=" "
+                        onBlur={(e) => setPass(e.currentTarget.value)}
                         type="password"
                         className="peer w-full rounded-lg border border-lead-700 bg-lead-900 px-4 py-2 text-[32px] text-white outline-none transition-all focus:border-lead-700 focus:ring-1 focus:ring-lead-700"
                     />
@@ -68,14 +91,15 @@ export default function Register() {
                         /* Quando o input está focado */
                         peer-focus:-top-8 peer-focus:translate-y-0 peer-focus:text-[20px] peer-focus:font-medium peer-focus:text-lead-400
                         /* Quando o input NÃO está vazio (tem texto digitado) */
-                        peer-[:not(:placeholder-shown)]:-top-8 peer-[:not(:placeholder-shown)]:translate-y-0 peer-[:not(:placeholder-shown)]:text-[20px] peer-[:not(:placeholder-shown)]:text-lead-500"
+                        peer-not-placeholder-shown:-top-8 peer-not-placeholder-shown:translate-y-0 peer-not-placeholder-shown:text-[20px] peer-not-placeholder-shown:text-lead-500"
                     >
                         {"Password"}
                     </label>
                 </div>
                 <div className="w-full flex flex-col justify-center items-center">
                     <button className="font-bold text-[32px] bg-crimson-500 py-3 px-[50px]
-                        rounded-[16px] shadow-md hover:bg-crimson-900 hover:cursor-pointer transition-all">
+                        rounded-[16px] shadow-md hover:bg-crimson-900 hover:cursor-pointer transition-all"
+                        onClick={() => register(nick, email, pass)}>
                         Entrar
                     </button>
                     <p className="font-semibold text-crimson-100 text-[24px] hover:text-crimson-500
