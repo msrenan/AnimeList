@@ -25,9 +25,10 @@ export type AnimeResponse = {
     episode: number,
     releaseDay: ReleaseDay,
     isFinished: boolean,
-    rewatch: boolean,
+    watched: boolean,
     favorite: boolean,
-    waiting: boolean
+    waitingForNextSeason: boolean,
+    needToWatch: boolean
 }
 
 export type AnimeListResponse = {

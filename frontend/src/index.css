@@ -61,3 +61,19 @@ body {
    @apply w-[170px] h-[80%] p-1 hover:bg-lead-400 hover:cursor-pointer
    rounded-[10px] transition-all text-[20px] font-semibold flex items-center justify-center gap-4
 }
+
+.animeCardInfo {
+   @apply font-light text-[20px] text-lead-200
+}
+
+.radioButton {
+   @apply appearance-none w-5 h-5 rounded-full cursor-pointer transition-all duration-100
+          bg-lead-900 border-2 border-lead-700 checked:bg-crimson-500 checked:ring-2 checked:ring-crimson-500
+          checked:border-[3px] checked:border-lead-950 outline-0 focus-visible:ring-2 focus-visible:ring-crimson-500/50
+}
+
+.genericButton {
+   @apply w-[220px] h-[50px] rounded-[12px] bg-crimson-600 text-lead-100
+                                    flex justify-center items-center gap-1 hover:cursor-pointer
+                                    hover:-translate-y-0.5 hover:bg-crimson-800 transition-all
+}

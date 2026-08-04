@@ -6,6 +6,7 @@ import Register from "./pages/Register";
 import { useEffect, useState } from "react";
 import { accountContext, loginContext, type AccountContext, type LoginContext } from "./types/context";
 import { useAuth } from "./hooks/useAuth";
+import Animes from "./pages/Animes";
 
 function ProtectedLayout({ loggedIn }: { loggedIn: boolean }) {
   if (!loggedIn) {
@@ -69,7 +70,7 @@ export default function App() {
       localStorage.clear();
       setLoggedIn(false);
     }
-    
+
     setUpSession();
   }, [])
 
@@ -87,7 +88,7 @@ export default function App() {
           <Route element={<ProtectedLayout loggedIn={loggedIn} />}>
             <Route path="/" element={<Navigate to="/home" replace />} />
             <Route path="/home" element={<Home />} />
-            <Route path="/anime" element={<Home />} />
+            <Route path="/anime" element={<Animes />} />
             <Route path="/list" element={<Home />} />
           </Route>
 

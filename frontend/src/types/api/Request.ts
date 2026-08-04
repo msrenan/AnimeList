@@ -17,9 +17,10 @@ export type AnimeData = {
     episode: number,
     releaseDay: ReleaseDay,
     isFinished: boolean,
-    rewatch: boolean,
+    watched: boolean,
     favorite: boolean,
-    waiting: boolean
+    waitingForNextSeason: boolean,
+    needToWatch: boolean
 }
 
 export type AnimeListData = {
@@ -28,27 +29,28 @@ export type AnimeListData = {
 }
 
 export type EditAccountData = {
-    nickname: string
-}
+    nickname?: string
+ }
 
 export type EditAnimeData = {
-    title: string,
-    season: number,
-    episode: number,
-    releaseDay: ReleaseDay,
-    isFinished: boolean,
-    rewatch: boolean,
-    favorite: boolean,
-    waiting: boolean
+    title?: string,
+    season?: number,
+    episode?: number,
+    releaseDay?: ReleaseDay,
+    isFinished?: boolean,
+    watched?: boolean,
+    favorite?: boolean,
+    waitingForNextSeason?: boolean,
+    needToWatch?: boolean
 }
 
 export type EditAnimeListData = {
-    name: string
+    name?: string
 }
 
 export type UpdateAnimeData = {
-    season: number,
-    episode: number,
-    isFinished: boolean,
-    waiting: boolean
+    season?: number,
+    episode?: number,
+    isFinished?: boolean,
+    waiting?: boolean
 }

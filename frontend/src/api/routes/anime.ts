@@ -12,7 +12,30 @@ export async function getAnimes() {
             console.log("Error while fetching animes!");
             if (e.response) {
                 console.log(`Status: ${e.response.status}`);
-                console.log(`Body: ${e.response.data}`)
+                console.log(`Body: ${JSON.stringify(e.response.data)}`)
+            } else if (e.request) {
+                console.log(`Server did not answered: ${e.request}`)
+            }
+        } else {
+            console.log("Unexpected error: ", e)
+        }
+    }
+}
+
+export async function searchAnimes(query: string) {
+    try {
+        const response = await api.get("/anime", {
+            params: {
+                search: query
+            }
+        });
+        return response.data;
+    } catch (e) {
+        if (axios.isAxiosError<errorResponse>(e)) {
+            console.log("Error while fetching animes!");
+            if (e.response) {
+                console.log(`Status: ${e.response.status}`);
+                console.log(`Body: ${JSON.stringify(e.response.data)}`)
             } else if (e.request) {
                 console.log(`Server did not answered: ${e.request}`)
             }
@@ -31,7 +54,7 @@ export async function getAnimeById(id: string) {
             console.log("Error while fetching anime by Id!");
             if (e.response) {
                 console.log(`Status: ${e.response.status}`);
-                console.log(`Body: ${e.response.data}`)
+                console.log(`Body: ${JSON.stringify(e.response.data)}`)
             } else if (e.request) {
                 console.log(`Server did not answered: ${e.request}`)
             }
@@ -50,7 +73,7 @@ export async function getAnimeByTitle(title: string) {
             console.log("Error while fetching anime by Title!");
             if (e.response) {
                 console.log(`Status: ${e.response.status}`);
-                console.log(`Body: ${e.response.data}`)
+                console.log(`Body: ${JSON.stringify(e.response.data)}`)
             } else if (e.request) {
                 console.log(`Server did not answered: ${e.request}`)
             }
@@ -69,7 +92,7 @@ export async function createAnime(anime: AnimeData) {
             console.log("Error while trying to create anime!");
             if (e.response) {
                 console.log(`Status: ${e.response.status}`);
-                console.log(`Body: ${e.response.data}`)
+                console.log(`Body: ${JSON.stringify(e.response.data)}`)
             } else if (e.request) {
                 console.log(`Server did not answered: ${e.request}`)
             }
@@ -88,7 +111,7 @@ export async function updateAnimeById(id: string, data: UpdateAnimeData) {
             console.log("Error while trying to update Anime by Id!");
             if (e.response) {
                 console.log(`Status: ${e.response.status}`);
-                console.log(`Body: ${e.response.data}`)
+                console.log(`Body: ${JSON.stringify(e.response.data)}`)
             } else if (e.request) {
                 console.log(`Server did not answered: ${e.request}`)
             }
@@ -107,7 +130,7 @@ export async function updateAnimeByTitle(title: string, data: UpdateAnimeData) {
             console.log("Error while trying to update Anime by Title!");
             if (e.response) {
                 console.log(`Status: ${e.response.status}`);
-                console.log(`Body: ${e.response.data}`)
+                console.log(`Body: ${JSON.stringify(e.response.data)}`)
             } else if (e.request) {
                 console.log(`Server did not answered: ${e.request}`)
             }
@@ -126,7 +149,7 @@ export async function editAnimeById(id: string, data: EditAnimeData) {
             console.log("Error while trying to edit Anime by Id!");
             if (e.response) {
                 console.log(`Status: ${e.response.status}`);
-                console.log(`Body: ${e.response.data}`)
+                console.log(`Body: ${JSON.stringify(e.response.data)}`)
             } else if (e.request) {
                 console.log(`Server did not answered: ${e.request}`)
             }
@@ -145,7 +168,7 @@ export async function editAnimeByTitle(title: string, data: EditAnimeData) {
             console.log("Error while trying to edit Anime by Title!");
             if (e.response) {
                 console.log(`Status: ${e.response.status}`);
-                console.log(`Body: ${e.response.data}`)
+                console.log(`Body: ${JSON.stringify(e.response.data)}`)
             } else if (e.request) {
                 console.log(`Server did not answered: ${e.request}`)
             }
@@ -164,7 +187,7 @@ export async function deleteAnimeById(id: string) {
             console.log("Error while fetching anime by Id!");
             if (e.response) {
                 console.log(`Status: ${e.response.status}`);
-                console.log(`Body: ${e.response.data}`)
+                console.log(`Body: ${JSON.stringify(e.response.data)}`)
             } else if (e.request) {
                 console.log(`Server did not answered: ${e.request}`)
             }
@@ -183,7 +206,7 @@ export async function deleteAnimeByTitle(title: string) {
             console.log("Error while fetching anime by Title!");
             if (e.response) {
                 console.log(`Status: ${e.response.status}`);
-                console.log(`Body: ${e.response.data}`)
+                console.log(`Body: ${JSON.stringify(e.response.data)}`)
             } else if (e.request) {
                 console.log(`Server did not answered: ${e.request}`)
             }
