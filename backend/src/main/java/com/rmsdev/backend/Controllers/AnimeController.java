@@ -23,8 +23,8 @@ public class AnimeController {
     private final AnimeService animeService;
 
     @GetMapping
-    public ResponseEntity<List<AnimeResponseDTO>> getAnimes() {
-        var responseDTO = animeService.getAnimes();
+    public ResponseEntity<List<AnimeResponseDTO>> getAnimes(@RequestParam(required = false) String search) {
+        var responseDTO = animeService.getAnimes(search);
 
         return ResponseEntity.ok(responseDTO);
     }

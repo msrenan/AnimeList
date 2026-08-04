@@ -5,7 +5,6 @@ import jakarta.persistence.*;
 import lombok.*;
 import lombok.extern.slf4j.Slf4j;
 
-import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
 
@@ -26,7 +25,7 @@ public class Anime {
 
     @Column(name = "title")
     private String title;
-
+    // Melhorar logs do Back.
     @Column(name = "season")
     private int season;
 
@@ -39,14 +38,17 @@ public class Anime {
     @Column(name = "finished")
     private boolean isFinished;
 
-    @Column(name = "waiting")
-    private boolean waiting;
+    @Column(name = "waitingForNextSeason")
+    private boolean waitingForNextSeason;
 
     @Column(name = "favorite")
     private boolean favorite;
 
-    @Column(name = "rewatch")
-    private boolean rewatch;
+    @Column(name = "watched")
+    private boolean watched;
+
+    @Column(name = "need_to_watch")
+    private boolean needToWatch;
 
     @ManyToMany(mappedBy = "animes")
     private List<AnimeList> lists;

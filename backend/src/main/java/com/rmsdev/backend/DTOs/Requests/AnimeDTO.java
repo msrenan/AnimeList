@@ -1,25 +1,29 @@
 package com.rmsdev.backend.DTOs.Requests;
 
 import com.rmsdev.backend.Enums.ReleaseDay;
+import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Positive;
 
 public record AnimeDTO(@NotBlank(message = "Title can't be blank!") @NotNull(message = "Title can't be null!") String title,
                        @NotNull(message = "Season can't be null!")
-                       @Positive(message = "Season can't be negative!")
-                       int season,
+                       @Min(value = 0, message = "Season can't be negative!")
+                       Integer season,
                        @NotNull(message = "Episode can't be null!")
-                       @Positive(message = "Episode can't be negative!")
-                       int episode,
+                       @Min(value = 0, message = "Episode can't be negative!")
+                       Integer episode,
                        @NotNull(message = "Release Day can't be null!")
                        ReleaseDay releaseDay,
                        @NotNull(message = "isFinished can't be null!")
-                       boolean isFinished,
-                       @NotNull(message = "Rewatch can't be null!")
-                       boolean rewatch,
+                       Boolean isFinished,
+                       @NotNull(message = "Watched can't be null!")
+                       Boolean watched,
                        @NotNull(message = "Favorite can't be null!")
-                       boolean favorite,
-                       @NotNull(message = "Waiting can't be nulL!")
-                       boolean waiting) {
+                       Boolean favorite,
+                       @NotNull(message = "Waiting can't be null!")
+                       Boolean waitingForNextSeason,
+                       @NotNull(message = "Need to Watch can't be null!")
+                       Boolean needToWatch
+                       ) {
 }

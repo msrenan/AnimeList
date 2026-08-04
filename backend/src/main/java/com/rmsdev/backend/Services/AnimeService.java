@@ -12,9 +12,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.UUID;
+import java.util.*;
 
 @Service
 @RequiredArgsConstructor
@@ -23,9 +21,19 @@ public class AnimeService {
 
     private final AnimeRepository animeRepository;
 
-    public List<AnimeResponseDTO> getAnimes() {
+    public List<AnimeResponseDTO> getAnimes(String search) {
 
-        List<Anime> animes = animeRepository.findAll();
+        List<Anime> animes;
+
+
+
+        if (search != null && !search.trim().isEmpty()) {
+            log.info("Search Query: " + search);
+            animes = animeRepository.findByTitleContainingIgnoreCase(search.trim());
+        } else {
+            log.info("There was no search query!");
+            animes = animeRepository.findAll();
+        }
 
         return animes.stream().map(anime -> new AnimeResponseDTO(anime)).toList();
     }
@@ -58,11 +66,12 @@ public class AnimeService {
                 .lists(new ArrayList<>())
                 .episode(dto.episode())
                 .season(dto.season())
-                .rewatch(dto.rewatch())
+                .watched(dto.watched())
                 .favorite(dto.favorite())
-                .waiting(dto.waiting())
+                .waitingForNextSeason(dto.waitingForNextSeason())
                 .isFinished(dto.isFinished())
                 .title(dto.title())
+                .needToWatch(dto.needToWatch())
                 .build();
 
         Anime saved = animeRepository.save(newAnime);
@@ -90,7 +99,7 @@ public class AnimeService {
         }
 
         if (dto.waiting() != null) {
-            anime.setWaiting(dto.waiting());
+            anime.setWaitingForNextSeason(dto.waiting());
         }
 
         Anime saved = animeRepository.save(anime);
@@ -102,15 +111,37 @@ public class AnimeService {
         Anime anime = animeRepository.findById(animeId)
                 .orElseThrow(() -> new ResourceNotFoundException("Anime (id: " + animeId + ") was not found"));
 
+        if (dto.season() != null && dto.season() >= 0) {
+            anime.setSeason(dto.season());
+        }
 
-        anime.setSeason(dto.season());
-        anime.setEpisode(dto.episode());
-        anime.setFinished(dto.isFinished());
-        anime.setWaiting(dto.waiting());
-        anime.setFavorite(dto.favorite());
-        anime.setRewatch(dto.rewatch());
-        anime.setTitle(dto.title());
+        if (dto.episode() != null && dto.episode() >= 0) {
+            anime.setEpisode(dto.episode());
+        }
 
+        if (dto.isFinished() != null) {
+            anime.setFinished(dto.isFinished());
+        }
+
+        if (dto.waitingForNextSeason() != null) {
+            anime.setWaitingForNextSeason(dto.waitingForNextSeason());
+        }
+
+        if (dto.favorite() != null) {
+            anime.setFavorite(dto.favorite());
+        }
+
+        if (dto.watched() != null) {
+            anime.setWatched(dto.watched());
+        }
+
+        if (dto.title() != null && dto.title() != "") {
+            anime.setTitle(dto.title());
+        }
+
+        if (dto.needToWatch() != null) {
+            anime.setNeedToWatch(dto.needToWatch());
+        }
 
         if (dto.releaseDay() != null) {
             anime.setReleaseDay(dto.releaseDay());
@@ -118,6 +149,7 @@ public class AnimeService {
 
         Anime saved = animeRepository.save(anime);
         return new AnimeResponseDTO(saved);
+
     }
 
     public AnimeResponseDTO updateAnimeByTitle(String title, UpdateAnimeDTO dto) {
@@ -139,7 +171,7 @@ public class AnimeService {
         }
 
         if (dto.waiting() != null) {
-            anime.setWaiting(dto.waiting());
+            anime.setWaitingForNextSeason(dto.waiting());
         }
 
         Anime saved = animeRepository.save(anime);
@@ -152,13 +184,37 @@ public class AnimeService {
                 .orElseThrow(() -> new ResourceNotFoundException("Anime " + title + " was not found"));
 
 
-        anime.setSeason(dto.season());
-        anime.setEpisode(dto.episode());
-        anime.setFinished(dto.isFinished());
-        anime.setWaiting(dto.waiting());
-        anime.setFavorite(dto.favorite());
-        anime.setRewatch(dto.rewatch());
-        anime.setTitle(dto.title());
+        if (dto.season() != null && dto.season() >= 0) {
+            anime.setSeason(dto.season());
+        }
+
+        if (dto.episode() != null && dto.episode() >= 0) {
+            anime.setEpisode(dto.episode());
+        }
+
+        if (dto.isFinished() != null) {
+            anime.setFinished(dto.isFinished());
+        }
+
+        if (dto.waitingForNextSeason() != null) {
+            anime.setWaitingForNextSeason(dto.waitingForNextSeason());
+        }
+
+        if (dto.favorite() != null) {
+            anime.setFavorite(dto.favorite());
+        }
+
+        if (dto.watched() != null) {
+            anime.setWatched(dto.watched());
+        }
+
+        if (dto.title() != null && dto.title() != "") {
+            anime.setTitle(dto.title());
+        }
+
+        if (dto.needToWatch() != null) {
+            anime.setNeedToWatch(dto.needToWatch());
+        }
 
         if (dto.releaseDay() != null) {
             anime.setReleaseDay(dto.releaseDay());
