@@ -1,16 +1,18 @@
-import { useContext, useState } from "react";
+import { useState } from "react";
 import { FaRegStar, FaStar } from "react-icons/fa";
 import ReleaseDayDropdown from "./ReleaseDayDropdown";
 import { ReleaseDay } from "../types/enum";
-import { animeContext, animeFormContext, type AnimeFormContext } from "../types/context";
+import { animeFormContext, type AnimeFormContext } from "../types/context";
 import AnimeStatusRadio from "./AnimeStatusRadio";
 import AnimeWatchRadio from "./AnimeWatchRadio";
-import type { AnimeData } from "../types/api/Request";
+import type { AnimeData, EditAnimeData } from "../types/api/Request";
 import { IoMdClose } from "react-icons/io";
 import type { AnimeResponse } from "../types/api/Response";
 
 type props = {
     animeData: AnimeResponse
+    setEditForm: (view: boolean, animeData?: AnimeResponse) => void;
+    setEditAnime: (id: string, editedAnime: EditAnimeData) => void;
 }
 
 export default function AnimeEditionForm(data: props) {
@@ -18,16 +20,14 @@ export default function AnimeEditionForm(data: props) {
     const [id] = useState<string>(data.animeData.id);
 
     const [title, setTitle] = useState<string>(data.animeData.title);
-    const [season, setSeason] = useState<string>(data.animeData.episode.toString());
-    const [episode, setEpisode] = useState<string>(data.animeData.season.toString());
+    const [season, setSeason] = useState<string>(data.animeData.season.toString());
+    const [episode, setEpisode] = useState<string>(data.animeData.episode.toString());
     const [isFavorite, setIsFavorite] = useState<boolean>(data.animeData.favorite);
     const [releaseDay, setReleaseDay] = useState<ReleaseDay>(data.animeData.releaseDay);
     const [finished, setFinished] = useState<boolean>(data.animeData.isFinished);
     const [waiting, setWaiting] = useState<boolean>(data.animeData.waitingForNextSeason);
     const [ntw, setNTW]  = useState<boolean>(data.animeData.needToWatch);
     const [watched, setWatched] = useState<boolean>(data.animeData.watched);
-
-    const { setEditForm, setEditAnime } = useContext(animeContext);
 
     const AnimeFormContextValue: AnimeFormContext = {
         setReleaseDay: (day: ReleaseDay) => {
@@ -89,11 +89,11 @@ export default function AnimeEditionForm(data: props) {
             watched
         }
 
-        setEditAnime(id, newAnime);
+        data.setEditAnime(id, newAnime);
 
         console.log(`Editing anime: ${JSON.stringify(newAnime)}`)
 
-        setEditForm(false);
+        data.setEditForm(false);
     }
 
     return(
@@ -105,7 +105,7 @@ export default function AnimeEditionForm(data: props) {
             <div className="flex w-full items-center justify-end">
                 <button className="border-2 border-lead-600 text-lead-600 hover:border-lead-200
                 hover:text-lead-200 hover:cursor-pointer transition-all duration-75"
-                onClick={() => setEditForm(false)}>
+                onClick={() => data.setEditForm(false)}>
                     <IoMdClose size={28} />
                 </button>
             </div>

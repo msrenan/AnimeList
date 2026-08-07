@@ -35,7 +35,7 @@ public class Account {
     @Column(name = "nickname")
     private String nick;
 
-    @OneToMany(mappedBy = "owner", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
+    @OneToMany(mappedBy = "owner", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<AnimeList> lists;
 
 }

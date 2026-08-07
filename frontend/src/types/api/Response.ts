@@ -38,8 +38,3 @@ export type AnimeListResponse = {
     animes: AnimeResponse[]
 }
 
-export type AccountListsResponse = {
-    ownerId: string,
-    lists: AnimeListResponse[]
-}
-

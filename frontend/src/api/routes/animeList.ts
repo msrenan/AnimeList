@@ -22,6 +22,25 @@ export async function getList(id: string) {
     }
 }
 
+export async function getListAnimesById(id: string) {
+    try {
+        const response = await api.get(`/list/${id}/animes`);
+        return response.data;
+    }  catch (e) {
+        if (axios.isAxiosError<errorResponse>(e)) {
+            console.log("Error while trying get list animes data!");
+            if (e.response) {
+                console.log(`Status: ${e.response.status}`);
+                console.log(`Body: ${JSON.stringify(e.response.data)}`)
+            } else if (e.request) {
+                console.log(`Server did not answered: ${e.request}`)
+            }
+        } else {
+            console.log("Unexpected error: ", e)
+        }
+    }
+}
+
 export async function addAnimeToListById(id: string, animeId: string) {
     try {
         const response = await api.patch(`/list/${id}/add/id/${animeId}`);
@@ -60,51 +79,9 @@ export async function removeAnimeOfListById(id: string, animeId: string) {
     }
 }
 
-export async function addAnimeToListByTitle(id: string, animeTitle: string) {
+export async function editAnimeList(id: string, data: EditAnimeListData) {
     try {
-        const response = await api.patch(`/list/${id}/add/title/${animeTitle}`);
-        return response.data;
-    }  catch (e) {
-        if (axios.isAxiosError<errorResponse>(e)) {
-            console.log("Error while trying add anime to list by id!");
-            if (e.response) {
-                console.log(`Status: ${e.response.status}`);
-                console.log(`Body: ${JSON.stringify(e.response.data)}`)
-            } else if (e.request) {
-                console.log(`Server did not answered: ${e.request}`)
-            }
-        } else {
-            console.log("Unexpected error: ", e)
-        }
-    }
-}
-
-export async function removeAnimeOfListByTitle(id: string, animeTitle: string) {
-    try {
-        const response = await api.patch(`/list/${id}/remove/title/${animeTitle}`);
-        return response.data;
-    }  catch (e) {
-        if (axios.isAxiosError<errorResponse>(e)) {
-            console.log("Error while trying to remove anime of list by title!");
-            if (e.response) {
-                console.log(`Status: ${e.response.status}`);
-                console.log(`Body: ${JSON.stringify(e.response.data)}`)
-            } else if (e.request) {
-                console.log(`Server did not answered: ${e.request}`)
-            }
-        } else {
-            console.log("Unexpected error: ", e)
-        }
-    }
-}
-
-export async function editAnimeList(id: string, newName: string) {
-    try {
-        const body: EditAnimeListData = {
-            name: newName
-        }
-
-        const response = await api.put(`/list/${id}`, body);
+        const response = await api.put(`/list/${id}`, data);
         return response.data;
     }  catch (e) {
         if (axios.isAxiosError<errorResponse>(e)) {

@@ -2,7 +2,6 @@ package com.rmsdev.backend.Controllers;
 
 import com.rmsdev.backend.DTOs.Requests.AnimeListDTO;
 import com.rmsdev.backend.DTOs.Requests.EditAccountDTO;
-import com.rmsdev.backend.DTOs.Responses.AccountListsResponseDTO;
 import com.rmsdev.backend.DTOs.Responses.AnimeListResponseDTO;
 import com.rmsdev.backend.DTOs.Responses.AccountResponseDTO;
 import com.rmsdev.backend.Services.AccountService;
@@ -12,6 +11,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
 import java.util.UUID;
 
 @RestController
@@ -30,8 +30,8 @@ public class AccountController {
     }
 
     @GetMapping("/{accountId}/lists")
-    public ResponseEntity<AccountListsResponseDTO> getAccountListsById(@PathVariable String accountId) {
-        var responseDTO = accountService.getAccountListsById(UUID.fromString(accountId));
+    public ResponseEntity<List<AnimeListResponseDTO>> getAccountListsById(@PathVariable String accountId, @RequestParam(required = false) String search) {
+        var responseDTO = accountService.getAccountListsById(UUID.fromString(accountId), search);
 
         return ResponseEntity.ok(responseDTO);
     }

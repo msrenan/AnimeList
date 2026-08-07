@@ -54,7 +54,7 @@
 }
 
 body {
-   @apply min-w-full min-h-full bg-app-bg text-lead-100 p-5
+   @apply min-w-full min-h-full bg-app-bg text-lead-100 p-5 overflow-hidden
 }
 
 .navbarButton {
@@ -76,4 +76,13 @@ body {
    @apply w-[220px] h-[50px] rounded-[12px] bg-crimson-600 text-lead-100
                                     flex justify-center items-center gap-1 hover:cursor-pointer
                                     hover:-translate-y-0.5 hover:bg-crimson-800 transition-all
+}
+
+.animeMenuRow {
+   @apply w-full h-fit hover:bg-crimson-300 transition-all hover:cursor-pointer flex
+   justify-center items-center gap-3 px-3 text-lead-300 hover:text-crimson-600
+}
+
+.vr {
+   @apply border-l-2
 }

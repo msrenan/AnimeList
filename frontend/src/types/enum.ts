@@ -9,3 +9,12 @@ export const ReleaseDay = {
 } as const;
 
 export type ReleaseDay = typeof ReleaseDay[keyof typeof ReleaseDay];
+
+export const FilterOptions = {
+    Favoritos: "FAVORITOS",
+    Assistidos: "ASSISTIDOS",
+    Assistindo: "ASSISTINDO",
+    Comecar: "COMEÇAR",
+}
+
+export type FilterOptions = typeof FilterOptions[keyof typeof FilterOptions];

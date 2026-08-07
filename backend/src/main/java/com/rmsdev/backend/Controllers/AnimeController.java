@@ -4,6 +4,7 @@ import com.rmsdev.backend.DTOs.Requests.AnimeDTO;
 import com.rmsdev.backend.DTOs.Requests.EditAnimeDTO;
 import com.rmsdev.backend.DTOs.Requests.UpdateAnimeDTO;
 import com.rmsdev.backend.DTOs.Responses.AnimeResponseDTO;
+import com.rmsdev.backend.Enums.FilterOptions;
 import com.rmsdev.backend.Services.AnimeService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -23,8 +24,9 @@ public class AnimeController {
     private final AnimeService animeService;
 
     @GetMapping
-    public ResponseEntity<List<AnimeResponseDTO>> getAnimes(@RequestParam(required = false) String search) {
-        var responseDTO = animeService.getAnimes(search);
+    public ResponseEntity<List<AnimeResponseDTO>> getAnimes(@RequestParam(required = false) String search,
+                                                            @RequestParam(required = false) FilterOptions filter) {
+        var responseDTO = animeService.getAnimes(search, filter);
 
         return ResponseEntity.ok(responseDTO);
     }
@@ -36,23 +38,10 @@ public class AnimeController {
         return ResponseEntity.ok(responseDTO);
     }
 
-    @GetMapping("/title/{animeTitle}")
-    public ResponseEntity<AnimeResponseDTO> getAnimeByTitle(@PathVariable String animeTitle) {
-        var responseDTO = animeService.getAnimeByTitle(animeTitle);
-
-        return ResponseEntity.ok(responseDTO);
-    }
 
     @PostMapping
     public ResponseEntity<AnimeResponseDTO> createAnime(@Valid @RequestBody AnimeDTO anime) {
         var responseDTO = animeService.createAnime(anime);
-
-        return ResponseEntity.ok(responseDTO);
-    }
-
-    @PatchMapping("/id/{animeId}")
-    public ResponseEntity<AnimeResponseDTO> updateAnimeById(@PathVariable String animeId, @Valid @RequestBody UpdateAnimeDTO dto) {
-        var responseDTO = animeService.updateAnimeById(UUID.fromString(animeId), dto);
 
         return ResponseEntity.ok(responseDTO);
     }
@@ -64,19 +53,6 @@ public class AnimeController {
         return ResponseEntity.ok(responseDTO);
     }
 
-    @PatchMapping("/title/{animeTitle}")
-    public ResponseEntity<AnimeResponseDTO> updateAnimeByTitle(@PathVariable String animeTitle, @Valid @RequestBody UpdateAnimeDTO dto) {
-        var responseDTO = animeService.updateAnimeByTitle(animeTitle, dto);
-
-        return ResponseEntity.ok(responseDTO);
-    }
-
-    @PutMapping("/title/{animeTitle}")
-    public ResponseEntity<AnimeResponseDTO> editAnimeByTitle(@PathVariable String animeTitle, @Valid @RequestBody EditAnimeDTO dto) {
-        var responseDTO = animeService.editAnimeByTitle(animeTitle, dto);
-
-        return ResponseEntity.ok(responseDTO);
-    }
 
     @DeleteMapping("/id/{animeId}")
     public ResponseEntity<Void> deleteAnimeById(@PathVariable String animeId) {
@@ -85,10 +61,4 @@ public class AnimeController {
         return ResponseEntity.ok().build();
     }
 
-    @DeleteMapping("/title/{animeTitle}")
-    public ResponseEntity<Void> deleteAnimeByTitle(@PathVariable String animeTitle) {
-        animeService.deleteAnimeByTitle(animeTitle);
-
-        return ResponseEntity.ok().build();
-    }
 }

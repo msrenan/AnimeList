@@ -30,7 +30,8 @@ export default function Register() {
         
             <div className="absolute top-1/2 left-1/2 -translate-x-[400px]
                             -translate-y-[400px] bg-lead-800 w-[800px] h-[800px]
-                            rounded-[16px] shadow-md flex flex-col items-center p-5 gap-[60px]">
+                            rounded-[16px] shadow-md flex flex-col items-center p-5 gap-[60px]
+                            overflow-hidden">
                 
                 <h1 className="font-bold text-[48px]">Register</h1>
                 <div className="relative w-full">

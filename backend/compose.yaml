@@ -1,6 +1,7 @@
 services:
   postgres:
     image: 'postgres:latest'
+    container_name: 'anime_db'
     environment:
       - POSTGRES_DB=animelist-db
       - POSTGRES_PASSWORD=senha
@@ -12,6 +13,8 @@ services:
       - 5432
     volumes:
       - animelist_data:/var/lib/postgresql/
+      - ./backups:/backups
+      - ./backups:/docker-entrypoint-initdb.d
 
 volumes:
   animelist_data:

@@ -7,6 +7,8 @@ import { useEffect, useState } from "react";
 import { accountContext, loginContext, type AccountContext, type LoginContext } from "./types/context";
 import { useAuth } from "./hooks/useAuth";
 import Animes from "./pages/Animes";
+import Lists from "./pages/Lists";
+import { useAccount } from "./hooks/useAccount";
 
 function ProtectedLayout({ loggedIn }: { loggedIn: boolean }) {
   if (!loggedIn) {
@@ -14,9 +16,9 @@ function ProtectedLayout({ loggedIn }: { loggedIn: boolean }) {
   }
 
   return (
-    <div className="flex flex-col">
+    <div className="flex flex-col shrink-0">
       <Navbar />
-      <main className="flex-1">
+      <main className="flex-1 overflow-hidden max-h-screen">
         <Outlet />
       </main>
     </div>
@@ -24,8 +26,11 @@ function ProtectedLayout({ loggedIn }: { loggedIn: boolean }) {
 }
 
 export default function App() {
+
   const [loggedIn, setLoggedIn] = useState<boolean>(true);
   const [accountId, setAccountId] = useState<string>("");
+
+  const { account, fetchAccount } = useAccount(accountId);
 
   const LoginContextValue: LoginContext = {
     isLoggedIn: (state: boolean) => {
@@ -38,10 +43,25 @@ export default function App() {
   };
 
   const AccountContextValue: AccountContext = {
-    accountId
+    account,
+    accountId,
+    logout: () => {
+      console.log("Logging out!")
+      localStorage.clear();
+      setLoggedIn(false);
+      return;
+    },
+
+    accountUpdated: () => {
+      window.location.reload();
+    },
   }
 
   const {check} = useAuth();
+
+  useEffect(() => {
+    fetchAccount();
+  }, [accountId])
 
   useEffect(() => {
     const setUpSession = async () => {
@@ -49,18 +69,19 @@ export default function App() {
       if (token) {
         console.log(`Token ${token}`)
         const valid = await check();
-        console.log(`Valid ${valid}`)
+        console.log(`Valid ${JSON.stringify(valid)}`)
         if (valid){
           console.log("Session restored!")
           const accId = localStorage.getItem("AccountId");
 
-          if (!accId) {
+          if (!accId || accId === "") {
             console.log("Session lost!");
             localStorage.clear();
             setLoggedIn(false);
             return;
           }
 
+          console.log(`accId ${accId}`)
           setAccountId(accId);
           setLoggedIn(true);
           return;
@@ -89,7 +110,7 @@ export default function App() {
             <Route path="/" element={<Navigate to="/home" replace />} />
             <Route path="/home" element={<Home />} />
             <Route path="/anime" element={<Animes />} />
-            <Route path="/list" element={<Home />} />
+            <Route path="/list" element={<Lists />} />
           </Route>
 
           {/* Rota Curinga: Redireciona qualquer URL desconhecida */}

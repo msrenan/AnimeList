@@ -40,10 +40,13 @@ public class AuthService {
 
     public LoginResponseDTO register(RegisterDTO dto) {
         if (accountRepository.existsByEmail(dto.email()) || accountRepository.existsByNick(dto.nickname())) {
-            throw new ConflictException("AccountController with email/username already registered!");
+            log.warn("{}/{} is already registered!", dto.nickname(), dto.email());
+            throw new ConflictException("Account with email/username already registered!");
         }
 
         var encPass = passwordEncoder.encode(dto.password());
+
+        log.info("Creatong new account: Nick: {} | Email: {}", dto.nickname(), dto.email());
 
         Account newAcc = new Account(
                 null,
@@ -74,24 +77,26 @@ public class AuthService {
 
         accountRepository.save(acc);
 
+        log.info("{}'s account (id: {}) created successfully!", acc.getNick(), acc.getId());
+
         return new LoginResponseDTO(acc.getId(), token);
     }
 
     public LoginResponseDTO login(LoginDTO dto) {
-        log.info("Buscando conta para o login: {}", dto.login());
+        log.info("Searching for account with login: {}", dto.login());
 
         Account acc = accountRepository.findByNick(dto.login())
                 .orElseGet(() -> accountRepository.findByEmail(dto.login())
                         .orElseThrow(() -> {
-                            log.warn("Conta não encontrada para: {}", dto.login());
-                            return new ResourceNotFoundException("AccountController with credential: " + dto.login() + " not found!");
+                            log.warn("Account {} not found!", dto.login());
+                            return new ResourceNotFoundException("Account with credential: " + dto.login() + " not found!");
                         }));
 
         var authToken = new UsernamePasswordAuthenticationToken(acc.getEmail(), dto.password());
 
         manager.authenticate(authToken);
 
-        log.info("Conta autenticada com sucesso! ID: {}", acc.getId());
+        log.info("Account successfully authenticated! ID: {}", acc.getId());
 
         var token = tokenService.gerarToken(acc);
 

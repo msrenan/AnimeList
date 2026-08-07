@@ -2,6 +2,7 @@ package com.rmsdev.backend.Controllers;
 
 import com.rmsdev.backend.DTOs.Requests.EditAnimeListDTO;
 import com.rmsdev.backend.DTOs.Responses.AnimeListResponseDTO;
+import com.rmsdev.backend.DTOs.Responses.AnimeResponseDTO;
 import com.rmsdev.backend.Services.AnimeListService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -9,6 +10,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
 import java.util.UUID;
 
 @RestController
@@ -26,6 +28,13 @@ public class AnimeListController {
         return ResponseEntity.ok(responseDTO);
     }
 
+    @GetMapping("/{listId}/animes")
+    public ResponseEntity<List<AnimeResponseDTO>> getListAnimesById(@PathVariable String listId) {
+        var responseDTO = animeListService.getListAnimesById(UUID.fromString(listId));
+
+        return ResponseEntity.ok(responseDTO);
+    }
+
     @PatchMapping("/{listId}/add/id/{animeId}")
     public ResponseEntity<AnimeListResponseDTO> addAnimeToListById(@PathVariable String listId, @PathVariable String animeId) {
         var responseDTO = animeListService.addAnimeToListById(UUID.fromString(listId), UUID.fromString(animeId));
@@ -36,20 +45,6 @@ public class AnimeListController {
     @PatchMapping("/{listId}/remove/id/{animeId}")
     public ResponseEntity<AnimeListResponseDTO> removeAnimeOfListById(@PathVariable String listId, @PathVariable String animeId) {
         var responseDTO = animeListService.removeAnimeOfListById(UUID.fromString(listId), UUID.fromString(animeId));
-
-        return ResponseEntity.ok(responseDTO);
-    }
-
-    @PatchMapping("/{listId}/add/title/{animeTitle}")
-    public ResponseEntity<AnimeListResponseDTO> addAnimeToListByTitle(@PathVariable String listId, @PathVariable String animeTitle) {
-        var responseDTO = animeListService.addAnimeToListByTitle(UUID.fromString(listId), animeTitle);
-
-        return ResponseEntity.ok(responseDTO);
-    }
-
-    @PatchMapping("/{listId}/remove/title/{animeTitle}")
-    public ResponseEntity<AnimeListResponseDTO> removeAnimeOfListByTitle(@PathVariable String listId, @PathVariable String animeTitle) {
-        var responseDTO = animeListService.removeAnimeOfListByTitle(UUID.fromString(listId), animeTitle);
 
         return ResponseEntity.ok(responseDTO);
     }

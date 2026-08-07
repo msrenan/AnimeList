@@ -22,10 +22,17 @@ export async function getAccount(id: string) {
     }
 }
 
-export async function getAccountLists(id: string) {
+export async function getAccountLists(id: string, query?: string) {
     try {
-        const response = await api.get(`/account/${id}/lists`);
-        return response.data;
+        if (query) {
+            const response = await api.get(`/account/${id}/lists`, {params: {
+                search: query
+            }});
+            return response.data;
+        } else {
+            const response = await api.get(`/account/${id}/lists`);
+            return response.data;
+        }
     } catch (e) {
         if (axios.isAxiosError<errorResponse>(e)) {
             console.log("Error while trying to fetch account lists!");
@@ -41,15 +48,9 @@ export async function getAccountLists(id: string) {
     }
 }
 
-export async function createAccountList(id: string, name:string, animeIds: string[]) {
+export async function createAccountList(id: string, data: AnimeListData) {
     try {
-
-        const body: AnimeListData = {
-            name,
-            animeIds
-        }
-
-        const response = await api.post(`/account/${id}/lists`, body);
+        const response = await api.post(`/account/${id}/lists`, data);
         return response.data;
     }  catch (e) {
         if (axios.isAxiosError<errorResponse>(e)) {
@@ -66,12 +67,9 @@ export async function createAccountList(id: string, name:string, animeIds: strin
     }
 }
 
-export async function editAccount(id: string, newNick: string) {
+export async function editAccountById(id: string, data: EditAccountData) {
     try {
-        const body: EditAccountData = {
-            nickname: newNick
-        };
-        const response = await api.put(`/account/${id}`, body);
+        const response = await api.put(`/account/${id}`, data);
         return response.data;
     }  catch (e) {
         if (axios.isAxiosError<errorResponse>(e)) {
@@ -88,7 +86,7 @@ export async function editAccount(id: string, newNick: string) {
     }
 }
 
-export async function deleteAccont(id: string) {
+export async function deleteAccountById(id: string) {
     try {
         const response = await api.delete(`/account/${id}`);
         return response.data;

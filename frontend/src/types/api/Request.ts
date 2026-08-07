@@ -25,7 +25,7 @@ export type AnimeData = {
 
 export type AnimeListData = {
     name: string,
-    animeIds: string[]
+    animeIds?: string[]
 }
 
 export type EditAccountData = {

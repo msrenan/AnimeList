@@ -2,7 +2,6 @@ package com.rmsdev.backend.Services;
 
 import com.rmsdev.backend.DTOs.Requests.AnimeListDTO;
 import com.rmsdev.backend.DTOs.Requests.EditAccountDTO;
-import com.rmsdev.backend.DTOs.Responses.AccountListsResponseDTO;
 import com.rmsdev.backend.DTOs.Responses.AnimeListResponseDTO;
 import com.rmsdev.backend.DTOs.Responses.AccountResponseDTO;
 import com.rmsdev.backend.Entities.Account;
@@ -23,6 +22,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
+import static java.util.stream.Collectors.toList;
+
 @Service
 @RequiredArgsConstructor
 @Slf4j
@@ -33,20 +34,43 @@ public class AccountService {
     private final AnimeListRepository animeListRepository;
 
     public AccountResponseDTO getAccountById(UUID accountId) {
+        log.info("Attempting to get account (id: {}) data!", accountId);
         Account acc = accountRepository.findById(accountId)
                 .orElseThrow(() -> new ResourceNotFoundException("User (id: " + accountId + ") was not found"));
 
+        log.info("Sending back data about {}'s account!", acc.getNick());
         return new AccountResponseDTO(acc);
     }
 
-    public AccountListsResponseDTO getAccountListsById(UUID accountId) {
+    public List<AnimeListResponseDTO> getAccountListsById(UUID accountId, String search) {
+        log.info("Attempting to get account (id: {}) animeLists!", accountId);
         Account acc = accountRepository.findById(accountId)
                 .orElseThrow(() -> new ResourceNotFoundException("User (id: " + accountId + ") was not found"));
 
-        return new AccountListsResponseDTO(acc);
+        if (search != null && !search.trim().isEmpty()) {
+
+            log.info("Searching for {} in {}'s animeLists", search, acc.getNick());
+
+            List<AnimeList> searched = acc.getLists().stream().filter(list ->
+                list.getName().toLowerCase().contains(search.toLowerCase())
+            ).toList();
+
+            log.info("Sending back results: {}", searched);
+
+            return searched.stream().map(list -> new AnimeListResponseDTO(list)).toList();
+
+        } else {
+            log.info("Since there was no search query, sending back all {}'s {} animeList(s)!", acc.getNick(), acc.getLists().size());
+            return acc.getLists().stream().map(list -> new AnimeListResponseDTO(list)).toList();
+        }
+
     }
 
     public AnimeListResponseDTO createListByAccountId(UUID accountId, AnimeListDTO dto) {
+        log.info("Attempting to create new animeList (name: {}) for account (id: {})!",dto.name() , accountId);
+        if (dto.name().equalsIgnoreCase("favoritos")) {
+            throw new BusinessException("List Favoritos already exists", HttpStatus.CONFLICT);
+        }
 
         Account acc = accountRepository.findById(accountId)
                 .orElseThrow(() -> new ResourceNotFoundException("User (id: " + accountId + ") was not found"));
@@ -84,13 +108,18 @@ public class AccountService {
 
         accountRepository.save(acc);
 
+        log.info("AnimeList created (with {} initial anime(s) ) successfully for {}!", saved.getAnimes().size(), acc.getNick());
+
         return new AnimeListResponseDTO(saved);
 
     }
 
     public AccountResponseDTO editAccountById(UUID accountId, EditAccountDTO dto) {
+        log.info("Attempting to edit account (id: {})", accountId);
         Account acc = accountRepository.findById(accountId)
                 .orElseThrow(() -> new ResourceNotFoundException("User (id: " + accountId + ") was not found"));
+
+        log.info("Changes: {} -> {}", acc.getNick(), dto.nickname());
 
         if (dto.nickname() != null) {
             if (accountRepository.existsByNick(dto.nickname())) {
@@ -100,12 +129,16 @@ public class AccountService {
         }
 
         Account newAcc = accountRepository.save(acc);
+        log.info("Account edited successfully!");
         return new AccountResponseDTO(newAcc);
     }
 
     public void deleteAccountById(UUID accountId) {
+        log.info("Attempting to delete account (id: {})", accountId);
         Account acc = accountRepository.findById(accountId)
                 .orElseThrow(() -> new ResourceNotFoundException("User (id: " + accountId + ") was not found"));
+
+        log.info("Deleting account! Nick: {}, Email: {}", acc.getNick(), acc.getEmail());
 
         accountRepository.deleteById(acc.getId());
     }

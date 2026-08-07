@@ -19,8 +19,8 @@ export default function Loading(data: props) {
 
     return(
 
-        <div className="flex flex-col w-[500px] h-[500px] absolute justify-center items-center
-            top-1/2 left-1/2 -translate-y-[250px] -translate-x-[250px] backdrop-blur-lg">
+        <div className="absolute flex flex-col w-[500px] h-[500px] justify-center items-center
+            top-1/2 left-1/2 -translate-y-[250px] -translate-x-[250px]">
             <div className="animate-spin duration-100 transition-all text-crimson-800">
                 <AiOutlineLoading size={size}/>
             </div>

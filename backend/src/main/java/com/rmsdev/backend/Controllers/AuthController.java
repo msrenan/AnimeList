@@ -32,7 +32,6 @@ public class AuthController {
 
     @GetMapping("/check")
     public ResponseEntity<Void> check() {
-        log.info("Checking");
         return ResponseEntity.ok().build();
     }
 }

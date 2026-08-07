@@ -43,7 +43,7 @@ public class TokenService {
             Algorithm alg = Algorithm.HMAC256(secret);
             return JWT.require(alg).withIssuer("AnimeListAPI").build().verify(token).getSubject();
         } catch (JWTVerificationException e) {
-            log.warn("Token inválido ou expirado!");
+            log.warn("Invalid/Expired Token!");
             throw new BusinessException("Invalid/Expired Token!", HttpStatus.UNAUTHORIZED);
         }
     }

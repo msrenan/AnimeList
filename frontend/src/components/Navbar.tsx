@@ -1,16 +1,20 @@
-import { useContext } from "react";
+import { useContext, useState } from "react";
 import { GoHomeFill } from "react-icons/go";
 import { LuListVideo } from "react-icons/lu";
 import { MdAccountCircle, MdLocalMovies } from "react-icons/md";
-import { SlOptions } from "react-icons/sl";
 import { useNavigate } from "react-router";
 import { accountContext } from "../types/context";
+import { IoExit } from "react-icons/io5";
+import AccountCard from "./AccountCard";
 
 export default function Navbar() {
 
     const navigate  = useNavigate();
 
-    const {accountId} = useContext(accountContext);
+    const { account, logout } = useContext(accountContext);
+
+    const [showAccount, setShowAccount] = useState<boolean>(false);
+    const [accCardCoords, setAccCardCoords] = useState<{x: number, y: number}>({x: 0, y: 0});
 
     return(
         <>
@@ -33,15 +37,27 @@ export default function Navbar() {
                 </div>
                 <div className="flex justify-center items-center space-x-5 shrink-none">
                     <button className="text-lead-200 hover:text-lead-400 hover:cursor-pointer
-                                        hover:-translate-y-0.5 transition-all">
+                                        hover:-translate-y-0.5 transition-all"
+                    onClick={(e) => {
+                        setAccCardCoords({x: e.clientX - 400, y: e.clientY})
+                        setShowAccount(true);
+                    }}                    
+                    >
                         <MdAccountCircle size={32}/>
                     </button>
                     <button className="text-lead-200 hover:text-lead-400 hover:cursor-pointer
-                                        hover:-translate-y-0.5 transition-all">
-                        <SlOptions size={28} />
+                                        hover:-translate-y-0.5 transition-all"
+                    onClick={() => logout()}
+                    >
+                        <IoExit size={28} />
                     </button>
                 </div>
             </div>
+
+            {showAccount && (
+                <AccountCard acc={account} x={accCardCoords.x} y={accCardCoords.y} menuControl={{view: showAccount, setterFunc: setShowAccount}} />
+            )}
+
         </>
     );
 
