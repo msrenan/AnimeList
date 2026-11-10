@@ -1,89 +1,105 @@
-import { useContext, useEffect, useRef, useState } from "react";
-import { MdEdit } from "react-icons/md";
+import { useContext, useEffect, useMemo, useRef, useState } from "react";
+import { createPortal } from "react-dom";
+import { FiChevronRight, FiEdit2, FiPlus } from "react-icons/fi";
 import { accountContext, animeCardContext } from "../types/context";
-import { FaPlus } from "react-icons/fa";
 import { useList } from "../hooks/useList";
 
-type props = {
-    x: number,
-    y: number
-}
+type AnimeContextMenuProps = {
+  x: number;
+  y: number;
+};
 
-export default function AnimeContextMenu(data: props) {
+export default function AnimeContextMenu({ x, y }: AnimeContextMenuProps) {
+  const menuRef = useRef<HTMLDivElement>(null);
+  const { setMenuView, setMenuOption } = useContext(animeCardContext);
+  const { accountId } = useContext(accountContext);
+  const { lists, fetchLists } = useList(accountId);
+  const [showLists, setShowLists] = useState(false);
 
-    const menuRef = useRef<HTMLDivElement>(null);
+  const availableLists = useMemo(
+    () => lists.filter((list) => list.name.toLowerCase() !== "favoritos"),
+    [lists],
+  );
 
-    const [x] = useState<number>(data.x);
-    const [y] = useState<number>(data.y);
-    const [showListsTab, setShowListsTab] = useState<boolean>(false);
+  useEffect(() => {
+    void fetchLists();
+  }, [fetchLists]);
 
-    const { setMenuView, view, setMenuOption } = useContext(animeCardContext);
+  useEffect(() => {
+    const handlePointerDown = (event: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
+        setMenuView(false);
+      }
+    };
 
-    const { accountId } = useContext(accountContext);
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setMenuView(false);
+    };
 
-    const { lists, fetchLists } = useList(accountId);
+    document.addEventListener("mousedown", handlePointerDown);
+    document.addEventListener("keydown", handleKeyDown);
+    return () => {
+      document.removeEventListener("mousedown", handlePointerDown);
+      document.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [setMenuView]);
 
-    useEffect(() => {
-        fetchLists();
-    }, [])
+  const clampedX = Math.min(x, window.innerWidth - 260);
+  const clampedY = Math.min(y, window.innerHeight - 220);
 
-    useEffect(() => {
-        if (!view) return;
+  return createPortal(
+    <div
+      ref={menuRef}
+      className="panel fixed z-[60] w-[240px] animate-pop overflow-hidden p-1.5"
+      style={{ top: clampedY, left: clampedX }}
+    >
+      <button
+        type="button"
+        className="flex w-full cursor-pointer items-center gap-2.5 rounded-lg px-3 py-2.5 text-left text-sm font-medium text-lead-200 transition-colors hover:bg-lead-700/70 hover:text-white"
+        onClick={() => setMenuOption("edit")}
+      >
+        <FiEdit2 size={16} />
+        Editar anime
+      </button>
+      <button
+        type="button"
+        className="flex w-full cursor-pointer items-center justify-between gap-2.5 rounded-lg px-3 py-2.5 text-left text-sm font-medium text-lead-200 transition-colors hover:bg-lead-700/70 hover:text-white"
+        onClick={() => setShowLists((current) => !current)}
+      >
+        <span className="flex items-center gap-2.5">
+          <FiPlus size={16} />
+          Adicionar à lista
+        </span>
+        <FiChevronRight
+          size={15}
+          className={`transition-transform ${showLists ? "rotate-90" : ""}`}
+        />
+      </button>
 
-        const handleClickOutside = (e: MouseEvent) => {
-            // Se o clique foi fora do container pai, fecha o dropdown
-            if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
-                setMenuView(false);
-            }
-        };
-
-        document.addEventListener("mousedown", handleClickOutside);
-        return () => {
-            document.removeEventListener("mousedown", handleClickOutside);
-        };
-    }, [view]);
-
-    return (
-        <div className={`absolute w-fit h-fit flex items-center justify-center
-        bg-lead-600 border-2 border-lead-200 rounded-[12px] py-5 z-20`}
-            style={{ top: `${y}px`, left: `${x}px` }}
-            ref={menuRef}>
-            <div className=" flex flex-col items-center justify-center w-[280px] h-fit max-h-[250px]">
-                <div className="animeMenuRow" onClick={() => setMenuOption('edit')}>
-
-                    <MdEdit size={22} />
-
-                    <p className="font-bold text-[18px]">
-                        Editar
-                    </p>
-                </div>
-                <div className="animeMenuRow" onClick={() => setMenuOption('addToList')}>
-                    <FaPlus size={22} />
-
-                    <p className="font-bold text-[18px]"
-                        onClick={() => setShowListsTab(!showListsTab)}>
-                        Adicionar à uma lista
-                    </p>
-                </div>
-                {
-                    showListsTab && (
-                        <>
-                            <hr className="min-w-[80%] border-lead-200 my-3" />
-                            <div className="flex flex-col w-[200px] h-full ml-5 overflow-auto">
-                                {lists.filter((l) => l.name.toLowerCase() != "favoritos").map((list) => (
-                                    <div className="flex flex-col w-full h-full justify-center hover:bg-lead-500
-                                    text-lead-200 hover:text-crimson-300 transition-all hover:cursor-pointer"
-                                        onClick={() => setMenuOption("addToList", list.id)}>
-                                        <p className="text-[18px]">{list.name}</p>
-                                    </div>
-                                ))}
-                            </div>
-                        </>
-
-                    )
-                }
-            </div>
-
+      {showLists && (
+        <div className="mt-1 max-h-40 overflow-y-auto border-t border-lead-700/70 pt-1">
+          {availableLists.length > 0 ? (
+            availableLists.map((list) => (
+              <button
+                key={list.id}
+                type="button"
+                className="flex w-full cursor-pointer items-center justify-between gap-3 rounded-lg px-3 py-2 text-left text-xs text-lead-300 transition-colors hover:bg-crimson-600/15 hover:text-crimson-200"
+                onClick={() => setMenuOption("addToList", list.id)}
+              >
+                <span className="truncate">{list.name}</span>
+                <span className="shrink-0 text-[10px] text-lead-500">
+                  {list.animes?.length ?? 0}
+                </span>
+              </button>
+            ))
+          ) : (
+            <p className="px-3 py-2 text-xs text-lead-500">
+              Crie uma lista para adicionar animes.
+            </p>
+          )}
         </div>
-    );
+      )}
+    </div>,
+    document.body,
+  );
 }

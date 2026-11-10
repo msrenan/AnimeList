@@ -1,79 +1,87 @@
-import { useContext, useEffect, useState } from "react";
+import { useContext, useState } from "react";
 import { animeFormContext } from "../types/context";
 
-type props = {
-  isFinished?: boolean,
-  waiting?: boolean
-}
+type AnimeStatusRadioProps = {
+  isFinished?: boolean;
+  waiting?: boolean;
+};
 
-export default function AnimeStatusRadio(data: props) {
-  // O estado guarda o 'value' da opção selecionada
+const OPTIONS = [
+  {
+    value: "finalizado",
+    label: "Finalizado",
+    description: "A obra já foi concluída.",
+  },
+  {
+    value: "aguardando",
+    label: "Aguardando nova temporada",
+    description: "Sem episódios no momento.",
+  },
+  {
+    value: "ongoing",
+    label: "Em exibição",
+    description: "Ainda está sendo lançado.",
+  },
+];
+
+export default function AnimeStatusRadio({ isFinished, waiting }: AnimeStatusRadioProps) {
   const [status, setAnimeStatus] = useState(() => {
-    if (data.isFinished != null && data.waiting != null) {
-      if (data.isFinished && !data.waiting ) {
-          return 'finalizado'
-      } else if (!data.isFinished && !data.waiting) {
-          return 'ongoing'
-      } else {
-          return 'aguardando'
-      }
-    } else {
-      return ";"
-    }
+    if (isFinished === undefined && waiting === undefined) return "ongoing";
+    if (isFinished && !waiting) return "finalizado";
+    if (!isFinished && waiting) return "aguardando";
+    if (isFinished === false && waiting === false) return "ongoing";
+    return "aguardando";
   });
 
   const { setStatus } = useContext(animeFormContext);
 
-  useEffect(() => {
-    const superStatus = () => {
-      setStatus(status);
-    }
-
-    superStatus();
-  }, [status]);
+  const choose = (value: string) => {
+    setAnimeStatus(value);
+    setStatus(value);
+  };
 
   return (
-    <div className="flex flex-col justify-center items-center gap-3 p-6 rounded-lg w-full">
-      <label className="flex items-center gap-3 cursor-pointer group">
-        <input
-          type="radio"
-          name="animeStatus" // O 'name' igual é o que agrupa os botões!
-          value="finalizado"
-          checked={status === "finalizado"}
-          onChange={(e) => setAnimeStatus(e.target.value)}
-          className="radioButton"
-        />
-        <span className="text-lead-200 group-hover:text-white transition-colors">
-          Finalizado
-        </span>
-      </label>
+    <div className="grid gap-2 sm:grid-cols-3">
+      {OPTIONS.map((option) => {
+        const selected = status === option.value;
 
-      <label className="flex items-center gap-3 cursor-pointer group">
-        <input
-          type="radio"
-          name="animeStatus"
-          value="aguardando"
-          checked={status === "aguardando"}
-          onChange={(e) => setAnimeStatus(e.target.value)}
-          className="radioButton"
-        />
-        <span className="text-lead-200 group-hover:text-white transition-colors">
-          Aguardando nova temporada
-        </span>
-      </label>
-      <label className="flex items-center gap-3 cursor-pointer group">
-        <input
-          type="radio"
-          name="animeStatus"
-          value="ongoing"
-          checked={status === "ongoing"}
-          onChange={(e) => setAnimeStatus(e.target.value)}
-          className="radioButton"
-        />
-        <span className="text-lead-200 group-hover:text-white transition-colors">
-          On Going
-        </span>
-      </label>
+        return (
+          <label
+            key={option.value}
+            className={`cursor-pointer rounded-xl border p-3 transition-all duration-200 ${
+              selected
+                ? "border-crimson-500/60 bg-crimson-600/10"
+                : "border-lead-700 bg-lead-950/40 hover:border-lead-500"
+            }`}
+          >
+            <input
+              type="radio"
+              name="animeStatus"
+              value={option.value}
+              checked={selected}
+              onChange={() => choose(option.value)}
+              className="sr-only"
+            />
+            <span className="flex items-start gap-2.5">
+              <span
+                className={`mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center rounded-full border-2 transition-colors ${
+                  selected ? "border-crimson-500" : "border-lead-500"
+                }`}
+              >
+                {selected && <span className="h-2 w-2 rounded-full bg-crimson-500" />}
+              </span>
+              <span>
+                <span className="block text-sm font-semibold text-lead-100">
+                  {option.label}
+                </span>
+                <span className="mt-0.5 block text-[11px] leading-snug text-lead-400">
+                  {option.description}
+                </span>
+              </span>
+            </span>
+          </label>
+        );
+      })}
     </div>
   );
 }

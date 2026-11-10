@@ -1,273 +1,379 @@
-import { useContext, useEffect, useRef, useState } from "react"
-import type { AnimeListResponse, AnimeResponse } from "../types/api/Response"
+import { useContext, useEffect, useMemo, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { FaListUl } from "react-icons/fa6";
-import { TiArrowSortedDown } from "react-icons/ti";
+import { FiChevronDown, FiEdit2, FiMoreVertical, FiStar } from "react-icons/fi";
+import type { AnimeListResponse, AnimeResponse } from "../types/api/Response";
+import { listCardContext, listsContext, type ListCardContext } from "../types/context";
 import AnimeInfoCard from "./AnimeInfoCard";
 import ListContextMenu from "./ListContextMenu";
-import { listCardContext, listsContext, type ListCardContext } from "../types/context";
 import ListTitleContextMenu from "./ListTitleContextMenu";
-import { useList } from "../hooks/useList";
-import Loading from "./Loading";
-import type { EditAnimeListData } from "../types/api/Request";
-import { useAnimes } from "../hooks/useAnimes";
-import { FilterOptions } from "../types/enum";
+import {
+  formatReleaseDay,
+  getTrackingStatus,
+  gradientFor,
+  pluralize,
+  toneClass,
+} from "../utils/anime";
 
-type props = {
-    listData: AnimeListResponse,
-    alwaysActive: boolean
-}
+type ListCardProps = {
+  listData: AnimeListResponse;
+  alwaysActive: boolean;
+};
 
-export default function ListCard(data: props) {
+export default function ListCard({ listData, alwaysActive }: ListCardProps) {
+  const [expanded, setExpanded] = useState(alwaysActive);
+  const [editMode, setEditMode] = useState(false);
+  const [draftName, setDraftName] = useState(listData.name);
+  const [showAnimeMenu, setShowAnimeMenu] = useState(false);
+  const [showTitleMenu, setShowTitleMenu] = useState(false);
+  const [contextCoords, setContextCoords] = useState({ x: 0, y: 0 });
+  const [selectedAnime, setSelectedAnime] = useState<AnimeResponse>();
+  const [infoCard, setInfoCard] = useState<{ anime: AnimeResponse; x: number; y: number }>();
+  const infoRef = useRef<HTMLDivElement>(null);
+  const savingNameRef = useRef(false);
+  const cancelNameRef = useRef(false);
 
-    const [info] = useState<AnimeListResponse>(data.listData);
-    const [showAnimes, setShowAnimes] = useState<boolean>(data.alwaysActive);
-    const [animes, setAnimes] = useState<AnimeResponse[]>([]);
-    const [showAnimeCard, setShowAnimeCard] = useState<{view: boolean, animeInfo?: AnimeResponse}>({view: false});
-    const [infoCardCoord, setInfoCardCoord] = useState<{x: number, y: number}>({x: 0, y: 0});
-    const [showContext, setShowContext] = useState<boolean>(false);
-    const [showTitleContext, setShowTitleContext] = useState<boolean>(false);
-    const [contextCoords, setContextCoords] = useState<{x: number, y:number}>({x: 0, y: 0});
-    const [animeRow, setAnimeRow] = useState<AnimeResponse>();
+  const {
+    setRemoveAnimeFromList,
+    setEditForm,
+    setAddAnimeToList,
+    setDeleteList,
+    setEditedListData,
+  } = useContext(listsContext);
 
-    const [editMode, setEditMode] = useState<boolean>(false);
+  const animes = listData.animes ?? [];
+  const isSpecial =
+    listData.name.toLowerCase() === "favoritos" ||
+    listData.id === "watching" ||
+    listData.id === "start";
 
-    const LIST_STYLE = "w-full max-h-[80%] bg-lead-600 border-2 border-lead-300 rounded-[16px]\
-            hover:border-crimson-500 transition-all flex flex-col justify-center py-3 px-3 text-lead-300 hover:text-crimson-500\
-            hover:cursor-pointer hover:-translate-y-0.5 group focus:border-crimson-500 focus:text-crimson-500\
-            focus:-translate-y-0.5 overflow-hidden shrink-0"
+  useEffect(() => {
+    if (!infoCard) return;
 
-    const ACTIVE_LIST_STYLE = "w-full max-h-[80%] bg-lead-600 border-2 rounded-[16px] border-crimson-500 flex flex-col justify-center py-3 px-3\
-            text-crimson-500 hover:cursor-pointer hover:-translate-y-0.5 group overflow-hidden shrink-0"
+    const handlePointerDown = (event: MouseEvent) => {
+      if (infoRef.current && !infoRef.current.contains(event.target as Node)) {
+        setInfoCard(undefined);
+      }
+    };
 
-    const cardRef = useRef<HTMLDivElement>(null);
-    const infoCardRef = useRef<HTMLDivElement>(null);
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setInfoCard(undefined);
+    };
 
-    const { getListAnimes, isLoading } = useList();
-    const { animeFilter } = useAnimes();
+    document.addEventListener("mousedown", handlePointerDown);
+    document.addEventListener("keydown", handleKeyDown);
+    return () => {
+      document.removeEventListener("mousedown", handlePointerDown);
+      document.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [infoCard]);
 
-    const { setRemoveAnimeFromList, setEditForm, setAddAnimeToList,
-        setDeleteList, setEditedListData
-     } = useContext(listsContext);
-
-    const handleClick = () => {
-        if (editMode) return;
-        if (data.alwaysActive) return;
-        if (cardRef.current != null) {
-            if (showAnimes) {
-                cardRef.current.blur();
-                setShowAnimes(false);
-                setShowAnimeCard({view: false});
-            } else {
-                cardRef.current.focus();
-                setShowAnimes(true);
-            }
-        }   
-    }
-
-    const updateCoords = (coords: {x: number, y: number}) => {
-        const maxX = window.innerWidth;
-        const maxY = window.innerHeight;
-
-        if (coords.x > maxX / 2 && coords.y > maxY / 2) {
-            setContextCoords({x: coords.x - 280, y: coords.y})
-        } else if (coords.x > maxX / 2 && coords.y <= maxY / 2) {
-            setContextCoords({x: coords.x - 280, y: coords.y})
-        } else if (coords.x <= maxX / 2 && coords.y > maxY / 2) {
-            setContextCoords({x: coords.x, y: coords.y})
-        } else {
-            setContextCoords({x: coords.x, y: coords.y});
-        }
-    }
-
-    const sendListEdition = (newName: string) => {
-
-        const changes: EditAnimeListData = {
-            name: newName
-        };
-
-        setEditedListData(info.id, changes);
-    }
-
-    const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-        if (e.key === "Enter") {
-            e.preventDefault();
-            sendListEdition(e.currentTarget.value);
-        }
-    }
-
-    const ListCardContextValue: ListCardContext = {
-        setMenuView: (view: boolean) => {
-            setShowContext(view);
-            setShowTitleContext(view);
-        },
-        view: showContext || showTitleContext,
-        setMenuOption: (option: 'editAnime' | 'remove' | 'editList' | 'delete' | 'add', animeId?: string) => {
-            if (option === 'editAnime') {
-                console.log("AnimeEdition");
-                if (animeRow) {
-                    setEditForm(true, animeRow);
-                }
-                setShowContext(false);
-                setShowTitleContext(false);
-            } else if (option === 'remove') {
-                console.log("Anime removal")
-                if (animeRow) {
-                    setRemoveAnimeFromList(info.id, animeRow.id);
-                }
-                setShowContext(false);
-                setShowTitleContext(false);
-            } else if (option === 'editList') {
-                console.log("ListEdition!");
-                setEditMode(true);
-                setShowContext(false);
-                setShowTitleContext(false);
-            } else if (option === 'delete') {
-                setDeleteList(true, info);
-                setShowContext(false);
-                setShowTitleContext(false);
-            } else if (option === 'add' && animeId) {
-                setAddAnimeToList(animeId, info.id)
-                setShowContext(false);
-                setShowTitleContext(false);
-            }
-        },
-    }
-
-    useEffect(() => {
-
-        const updateAnimes = async () => {
-            if (info.id === "watching") {
-                const listAnimes = await animeFilter(FilterOptions.Assistindo)
-                 if (listAnimes) {
-                    setAnimes(listAnimes);
-                }
-            } else if (info.id === "start") {
-                const listAnimes = await animeFilter(FilterOptions.Comecar)
-                 if (listAnimes) {
-                    setAnimes(listAnimes);
-                }
-            } else {
-                const listAnimes = await getListAnimes(info.id);
-                if (listAnimes) {
-                    setAnimes(listAnimes);
-                }
-            }
-            
+  const listCardContextValue = useMemo<ListCardContext>(
+    () => ({
+      setMenuView: (view) => {
+        setShowAnimeMenu(view);
+        setShowTitleMenu(view);
+      },
+      view: showAnimeMenu || showTitleMenu,
+      setMenuOption: (option, animeId) => {
+        if (option === "editAnime" && selectedAnime) {
+          setEditForm(true, selectedAnime);
+        } else if (option === "remove" && selectedAnime) {
+          setRemoveAnimeFromList(listData.id, selectedAnime.id);
+        } else if (option === "editList") {
+          cancelNameRef.current = false;
+          savingNameRef.current = false;
+          setDraftName(listData.name);
+          setEditMode(true);
+        } else if (option === "delete") {
+          setDeleteList(true, listData);
+        } else if (option === "add" && animeId) {
+          setAddAnimeToList(animeId, listData.id);
         }
 
-        updateAnimes();
+        setShowAnimeMenu(false);
+        setShowTitleMenu(false);
+      },
+    }),
+    [
+      showAnimeMenu,
+      showTitleMenu,
+      selectedAnime,
+      listData,
+      setEditForm,
+      setRemoveAnimeFromList,
+      setDeleteList,
+      setAddAnimeToList,
+    ],
+  );
 
-        if (!showAnimeCard.view) return;
+  const openTitleMenu = (x: number, y: number) => {
+    setContextCoords({
+      x: Math.min(x, window.innerWidth - 280),
+      y: Math.min(y, window.innerHeight - 260),
+    });
+    setShowTitleMenu(true);
+    setShowAnimeMenu(false);
+  };
 
-        const handleClickOutside = (e: MouseEvent) => {
-            // Se o clique foi fora do container pai, fecha o dropdown
-            if (infoCardRef.current && !infoCardRef.current.contains(e.target as Node)) {
-                setShowAnimeCard({view: false});
-            }
-        };
+  const openAnimeMenu = (anime: AnimeResponse, x: number, y: number) => {
+    setSelectedAnime(anime);
+    setContextCoords({
+      x: Math.min(x, window.innerWidth - 240),
+      y: Math.min(y, window.innerHeight - 150),
+    });
+    setShowAnimeMenu(true);
+    setShowTitleMenu(false);
+  };
 
-        document.addEventListener("mousedown", handleClickOutside);
-        return () => {
-            document.removeEventListener("mousedown", handleClickOutside);
-        };
-    }, [showAnimeCard.view]);
+  const saveListName = () => {
+    if (savingNameRef.current) return;
 
-    return(
-        <listCardContext.Provider value={ListCardContextValue}>
-            <div className={data.alwaysActive ? ACTIVE_LIST_STYLE : LIST_STYLE}
-            key={info.id}
-            ref={cardRef}
-            onBlur={() => {
-                setShowAnimeCard({view: false}); 
-                if (!data.alwaysActive) setShowAnimes(false)
+    if (cancelNameRef.current) {
+      cancelNameRef.current = false;
+      setDraftName(listData.name);
+      return;
+    }
+
+    const trimmed = draftName.trim();
+    setEditMode(false);
+
+    if (!trimmed || trimmed === listData.name) {
+      setDraftName(listData.name);
+      return;
+    }
+
+    savingNameRef.current = true;
+    setEditedListData(listData.id, { name: trimmed });
+  };
+
+  const openInfoCard = (anime: AnimeResponse, x: number, y: number) => {
+    setInfoCard({
+      anime,
+      x: Math.min(x + 12, window.innerWidth - 370),
+      y: Math.min(y + 12, window.innerHeight - 420),
+    });
+  };
+
+  return (
+    <listCardContext.Provider value={listCardContextValue}>
+      <div className="panel flex flex-col overflow-hidden">
+        <div
+          className="flex items-center justify-between gap-3 px-4 py-4 sm:px-5"
+          onContextMenu={(event) => {
+            if (isSpecial) return;
+            event.preventDefault();
+            openTitleMenu(event.clientX, event.clientY);
+          }}
+        >
+          <div
+            role={alwaysActive ? undefined : "button"}
+            tabIndex={alwaysActive ? undefined : 0}
+            className={`flex min-w-0 flex-1 items-center gap-3 rounded-lg text-left outline-none focus-visible:ring-2 focus-visible:ring-crimson-500/40 ${
+              alwaysActive ? "cursor-default" : "cursor-pointer"
+            }`}
+            onClick={() => {
+              if (!alwaysActive) setExpanded((current) => !current);
             }}
-            tabIndex={0}
+            onKeyDown={(event) => {
+              if (!alwaysActive && (event.key === "Enter" || event.key === " ")) {
+                event.preventDefault();
+                setExpanded((current) => !current);
+              }
+            }}
+            aria-expanded={expanded}
+          >
+            <span
+              className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-white shadow-lg"
+              style={{ background: gradientFor(listData.name) }}
             >
-                <div className="flex items-center justify-between w-full"
-                onClick={() => handleClick()} onContextMenu={(e) => {
-                    e.preventDefault();
-                    updateCoords({x: e.clientX, y: e.clientY});
-                    setShowTitleContext(true);
-                }}>
-                    <div className="flex items-center justify-start gap-3 h-full w-[50%] shrink-0">
-                        <FaListUl size={30}/>
-                        {
-                            editMode ? (
-                                <input autoFocus={true} className="font-bold text-[32px]
-                                outline-none" defaultValue={info.name} onKeyDown={(e) => handleKeyDown(e)}
-                                onBlur={(e) => sendListEdition(e.currentTarget.value)}/>
-                            ) : (
-                                <h1 className="font-bold text-[32px]">{info.name}</h1>
-                            )
-                        }
-                        
-                    </div>
-                    <div className="flex items-center justify-center w-full">
-                        <p className="text-[24px]">{animes.length} anime(s)</p>
-                    </div>
-                    <div className="flex items-center justify-center -rotate-90 group-focus:rotate-0 transition-all
-                    duration-100 shrink-0">
-                        <TiArrowSortedDown size={32} />
-                    </div>
-                </div>
-                
+              <FaListUl size={16} />
+            </span>
+            <span className="min-w-0 flex-1">
+              {editMode ? (
+                <input
+                  autoFocus
+                  value={draftName}
+                  onChange={(event) => setDraftName(event.target.value)}
+                  onClick={(event) => event.stopPropagation()}
+                  onKeyDown={(event) => {
+                    if (event.key === "Enter") saveListName();
+                    if (event.key === "Escape") {
+                      cancelNameRef.current = true;
+                      setDraftName(listData.name);
+                      setEditMode(false);
+                    }
+                  }}
+                  onBlur={saveListName}
+                  maxLength={60}
+                  className="w-full rounded-lg border border-crimson-500/60 bg-lead-950 px-2 py-1 font-display text-base font-semibold text-white outline-none"
+                />
+              ) : (
+                <span className="block truncate font-display text-base font-semibold text-white">
+                  {listData.name}
+                </span>
+              )}
+              <span className="mt-0.5 block text-xs text-lead-400">
+                {pluralize(animes.length, "anime", "animes")}
+              </span>
+            </span>
+          </div>
 
-                <div 
-                    className={`grid transition-all duration-300 ease-in-out overflow-hidden ${
-                        showAnimes 
-                            ? "grid-rows-[1fr] opacity-100 mt-1" 
-                            : "grid-rows-[0fr] opacity-0 mt-0"
-                    }`}
-                >
-                    <div className="flex flex-col gap-1 overflow-scroll">
-                        {isLoading ? (
-                            <Loading size={24}/>
-                        ) : animes.length > 0 ? animes.map((an, i) => (
-                            <div key={`${an.id}-${info.id}`} className="flex w-full h-full text-crimson-500 items-center gap-3
-                            hover:bg-lead-800/50 hover:text-crimson-500 transform-fill"
-                            onClick={(e) => {
-                                setShowAnimeCard({view: true, animeInfo: an});
-                                setInfoCardCoord({x:e.clientX, y:e.clientY})}}
-                            onContextMenu={(e) => {
-                                e.preventDefault();
-                                updateCoords({x: e.clientX, y: e.clientY});
-                                setAnimeRow(an);
-                                setShowContext(true);
+          <div className="flex shrink-0 items-center gap-1">
+            {!alwaysActive && (
+              <button
+                type="button"
+                onClick={() => setExpanded((current) => !current)}
+                className="btn-icon h-8 w-8"
+                aria-label={expanded ? "Recolher lista" : "Expandir lista"}
+              >
+                <FiChevronDown
+                  size={18}
+                  className={`transition-transform duration-300 ${expanded ? "rotate-180" : ""}`}
+                />
+              </button>
+            )}
+            {!isSpecial && (
+              <button
+                type="button"
+                onClick={(event) => {
+                  const rect = event.currentTarget.getBoundingClientRect();
+                  openTitleMenu(rect.right - 260, rect.bottom + 6);
+                }}
+                className="btn-icon h-8 w-8"
+                aria-label="Opções da lista"
+                title="Opções da lista"
+              >
+                <FiMoreVertical size={17} />
+              </button>
+            )}
+          </div>
+        </div>
+
+        <div
+          className={`grid transition-all duration-300 ease-out ${
+            expanded ? "grid-rows-[1fr] opacity-100" : "grid-rows-[0fr] opacity-0"
+          }`}
+        >
+          <div className="overflow-hidden">
+            <div className="soft-divider" />
+            <ul className="max-h-[430px] space-y-1 overflow-y-auto p-2">
+              {animes.length > 0 ? (
+                animes.map((anime, index) => {
+                  const tracking = getTrackingStatus(anime);
+
+                  return (
+                    <li
+                      key={`${anime.id}-${listData.id}`}
+                      className="group flex cursor-pointer items-center gap-3 rounded-xl px-3 py-2.5 transition-colors hover:bg-lead-800/70"
+                      onClick={(event) =>
+                        openInfoCard(anime, event.clientX, event.clientY)
+                      }
+                      onContextMenu={(event) => {
+                        event.preventDefault();
+                        openAnimeMenu(anime, event.clientX, event.clientY);
+                      }}
+                    >
+                      <span className="w-5 shrink-0 text-center text-xs font-semibold text-lead-500">
+                        {index + 1}
+                      </span>
+                      <div className="min-w-0 flex-1">
+                        <p className="flex items-center gap-1.5 truncate text-sm font-medium text-lead-100">
+                          {anime.favorite && (
+                            <FiStar
+                              size={12}
+                              className="shrink-0 text-amber-300"
+                              fill="currentColor"
+                            />
+                          )}
+                          <span className="truncate">{anime.title}</span>
+                        </p>
+                        <p className="mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-[11px] text-lead-400">
+                          <span>T{anime.season}</span>
+                          <span className="text-lead-600">•</span>
+                          <span>EP {anime.episode}</span>
+                          <span className="text-lead-600">•</span>
+                          <span>{formatReleaseDay(anime.releaseDay)}</span>
+                        </p>
+                      </div>
+
+                      <span
+                        className={`hidden shrink-0 rounded-full border px-2 py-0.5 text-[10px] font-semibold sm:inline-flex ${toneClass(
+                          tracking.tone,
+                        )}`}
+                      >
+                        {tracking.label}
+                      </span>
+
+                      <div className="flex shrink-0 items-center gap-0.5 opacity-100 transition-opacity sm:opacity-0 sm:group-hover:opacity-100">
+                        <button
+                          type="button"
+                          onClick={(event) => {
+                            event.stopPropagation();
+                            setEditForm(true, anime);
+                          }}
+                          className="btn-icon h-7 w-7"
+                          aria-label="Editar anime"
+                          title="Editar anime"
+                        >
+                          <FiEdit2 size={14} />
+                        </button>
+                        {!isSpecial && (
+                          <button
+                            type="button"
+                            onClick={(event) => {
+                              event.stopPropagation();
+                              const rect = event.currentTarget.getBoundingClientRect();
+                              openAnimeMenu(anime, rect.right - 220, rect.bottom + 6);
                             }}
-                            >
-                                <p className="font-bold text-[28px] mr-5 w-[50%]"><span className={an.favorite ? "text-yellow-400" : ""}>{i + 1}.</span> {an.title}</p>
-                                <div className="flex gap-2 items-center justify-center">
-                                    <p className="text-[24px]">Temporada: {an.season}</p>
-                                    <p className="text-[24px]">Episódio: {an.episode}</p>
-
-                                </div>
-                            </div>
-                        )) : (
-                            <div className="flex w-full h-fit text-crimson-500 items-center justify-center gap-3">
-                                <h1 className="text-[28px] font-bold">Lista vazia.</h1>
-                            </div>
+                            className="btn-icon h-7 w-7"
+                            aria-label="Opções do anime"
+                            title="Opções do anime"
+                          >
+                            <FiMoreVertical size={15} />
+                          </button>
                         )}
-                    </div>
-                </div>
-            </div>
+                      </div>
+                    </li>
+                  );
+                })
+              ) : (
+                <li className="flex flex-col items-center justify-center gap-1 px-4 py-10 text-center">
+                  <p className="text-sm font-semibold text-lead-300">Lista vazia</p>
+                  <p className="text-xs text-lead-500">
+                    {isSpecial
+                      ? "Os animes aparecem aqui automaticamente."
+                      : "Use o menu da lista para adicionar animes."}
+                  </p>
+                </li>
+              )}
+            </ul>
+          </div>
+        </div>
+      </div>
 
-            {showAnimeCard.view && showAnimeCard.animeInfo && (
-                <div className="absolute w-fit h-fit"
-                style={{top:`${infoCardCoord.y}px`, left: `${infoCardCoord.x}px`}}
-                ref={infoCardRef}
-                >
-                    <AnimeInfoCard animeData={showAnimeCard.animeInfo} Ikey={showAnimeCard.animeInfo.id}/>
-                </div>
-            )}
+      {showAnimeMenu && selectedAnime && (
+        <ListContextMenu x={contextCoords.x} y={contextCoords.y} isSpecial={isSpecial} />
+      )}
 
-            {showContext && animeRow && (
-                <ListContextMenu x={contextCoords.x} y={contextCoords.y} isSpecial={info.name.toLowerCase() === "favoritos" || info.id === "start" || info.id === "watching"} />
-            )}
+      {showTitleMenu && !isSpecial && (
+        <ListTitleContextMenu x={contextCoords.x} y={contextCoords.y} list={listData} />
+      )}
 
-            {info.name.toLowerCase() !== "favoritos" && info.id != "watching" && info.id != "start" && showTitleContext && (
-                <ListTitleContextMenu x={contextCoords.x} y={contextCoords.y} list={info} />
-            )}
-        </listCardContext.Provider>
-    );
-
+      {infoCard &&
+        createPortal(
+          <div
+            ref={infoRef}
+            className="fixed z-[70]"
+            style={{ top: infoCard.y, left: infoCard.x }}
+          >
+            <AnimeInfoCard
+              animeData={infoCard.anime}
+              onClose={() => setInfoCard(undefined)}
+            />
+          </div>,
+          document.body,
+        )}
+    </listCardContext.Provider>
+  );
 }

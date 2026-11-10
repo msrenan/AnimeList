@@ -1,222 +1,238 @@
-import { useState } from "react";
-import { FaRegStar, FaStar } from "react-icons/fa";
+import { useMemo, useState } from "react";
+import { FiStar } from "react-icons/fi";
+import { toast } from "react-toastify";
+import Modal from "./ui/Modal";
 import ReleaseDayDropdown from "./ReleaseDayDropdown";
-import { ReleaseDay } from "../types/enum";
-import { animeFormContext, type AnimeFormContext } from "../types/context";
 import AnimeStatusRadio from "./AnimeStatusRadio";
 import AnimeWatchRadio from "./AnimeWatchRadio";
+import { ReleaseDay } from "../types/enum";
+import { animeFormContext, type AnimeFormContext } from "../types/context";
 import type { AnimeData, EditAnimeData } from "../types/api/Request";
-import { IoMdClose } from "react-icons/io";
 import type { AnimeResponse } from "../types/api/Response";
 
-type props = {
-    animeData: AnimeResponse
-    setEditForm: (view: boolean, animeData?: AnimeResponse) => void;
-    setEditAnime: (id: string, editedAnime: EditAnimeData) => void;
+type AnimeEditionFormProps = {
+  animeData: AnimeResponse;
+  setEditForm: (view: boolean, animeData?: AnimeResponse) => void;
+  setEditAnime: (id: string, editedAnime: EditAnimeData) => Promise<unknown> | unknown;
+};
+
+function parseNonNegative(value: string) {
+  const parsed = Number.parseInt(value, 10);
+  return Number.isNaN(parsed) || parsed < 0 ? 0 : parsed;
 }
 
-export default function AnimeEditionForm(data: props) {
+export default function AnimeEditionForm({
+  animeData,
+  setEditForm,
+  setEditAnime,
+}: AnimeEditionFormProps) {
+  const [id] = useState(animeData.id);
+  const [title, setTitle] = useState(animeData.title);
+  const [season, setSeason] = useState(animeData.season.toString());
+  const [episode, setEpisode] = useState(animeData.episode.toString());
+  const [isFavorite, setIsFavorite] = useState(animeData.favorite);
+  const [releaseDay, setReleaseDay] = useState<ReleaseDay>(animeData.releaseDay);
+  const [finished, setFinished] = useState(animeData.isFinished);
+  const [waiting, setWaiting] = useState(animeData.waitingForNextSeason);
+  const [ntw, setNTW] = useState(animeData.needToWatch);
+  const [watched, setWatched] = useState(animeData.watched);
+  const [saving, setSaving] = useState(false);
+  const [titleError, setTitleError] = useState(false);
 
-    const [id] = useState<string>(data.animeData.id);
-
-    const [title, setTitle] = useState<string>(data.animeData.title);
-    const [season, setSeason] = useState<string>(data.animeData.season.toString());
-    const [episode, setEpisode] = useState<string>(data.animeData.episode.toString());
-    const [isFavorite, setIsFavorite] = useState<boolean>(data.animeData.favorite);
-    const [releaseDay, setReleaseDay] = useState<ReleaseDay>(data.animeData.releaseDay);
-    const [finished, setFinished] = useState<boolean>(data.animeData.isFinished);
-    const [waiting, setWaiting] = useState<boolean>(data.animeData.waitingForNextSeason);
-    const [ntw, setNTW]  = useState<boolean>(data.animeData.needToWatch);
-    const [watched, setWatched] = useState<boolean>(data.animeData.watched);
-
-    const AnimeFormContextValue: AnimeFormContext = {
-        setReleaseDay: (day: ReleaseDay) => {
-            setReleaseDay(day);
-        },
-        setStatus: (status: string) => {
-            if (status === 'finalizado') {
-                setFinished(true);
-                setWaiting(false);
-            } else if (status === 'ongoing') {
-                setFinished(false);
-                setWaiting(false);
-            } else {
-                setFinished(false);
-                setWaiting(true);
-            }
-        },
-        setTracking: (tracking: string) => {
-            if (tracking === 'assistindo') {
-                setNTW(false);
-                setWatched(false);
-            } else if (tracking === 'comecar') {
-                setNTW(true);
-                setWatched(false);
-            } else if (tracking === 'rever') {
-                setNTW(true);
-                setWatched(true);
-            } else {
-                setNTW(false);
-                setWatched(true);
-            }
-        },
-    };
-
-    const handleSend = () => {
-        let intEp, intTemp;
-
-        if (episode === '') {
-            intEp = 0;
+  const formContext = useMemo<AnimeFormContext>(
+    () => ({
+      setReleaseDay: (day: ReleaseDay) => setReleaseDay(day),
+      setStatus: (status: string) => {
+        if (status === "finalizado") {
+          setFinished(true);
+          setWaiting(false);
+        } else if (status === "ongoing") {
+          setFinished(false);
+          setWaiting(false);
         } else {
-            intEp = parseInt(episode.trim());
+          setFinished(false);
+          setWaiting(true);
         }
-
-        if (season === '') {
-            intTemp = 0;
+      },
+      setTracking: (tracking: string) => {
+        if (tracking === "assistindo") {
+          setNTW(false);
+          setWatched(false);
+        } else if (tracking === "comecar") {
+          setNTW(true);
+          setWatched(false);
+        } else if (tracking === "rever") {
+          setNTW(true);
+          setWatched(true);
         } else {
-            intTemp = parseInt(season.trim());
+          setNTW(false);
+          setWatched(true);
         }
+      },
+    }),
+    [],
+  );
 
-        const newAnime: AnimeData = {
-            title,
-            season: intTemp,
-            episode: intEp,
-            releaseDay,
-            isFinished: finished,
-            favorite: isFavorite,
-            needToWatch: ntw,
-            waitingForNextSeason: waiting,
-            watched
-        }
+  const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
 
-        data.setEditAnime(id, newAnime);
-
-        console.log(`Editing anime: ${JSON.stringify(newAnime)}`)
-
-        data.setEditForm(false);
+    if (!title.trim()) {
+      setTitleError(true);
+      toast.error("Informe o título do anime.");
+      return;
     }
 
-    return(
-        <animeFormContext.Provider value={AnimeFormContextValue}>
-        <div className="absolute w-[600px] h-[880px] top-1/2 left-1/2 
-                        -translate-x-[300px] -translate-y-[440px] bg-lead-500 shadow-md
-                        rounded-[16px] p-5 border-2 border-lead-200 flex flex-col
-                        items-center">
-            <div className="flex w-full items-center justify-end">
-                <button className="border-2 border-lead-600 text-lead-600 hover:border-lead-200
-                hover:text-lead-200 hover:cursor-pointer transition-all duration-75"
-                onClick={() => data.setEditForm(false)}>
-                    <IoMdClose size={28} />
-                </button>
-            </div>
-            <h1 className="font-bold text-[32px] text-lead-200 mb-5">Edite um Anime!</h1>
-            <div className="w-full flex flex-col gap-8 items-center justify-center">
-                <div className="relative w-full">
-                    <input
-                        id={"titleInput"}
-                        /* O truque do CSS: um espaço em branco no placeholder */
-                        placeholder=" "
-                        defaultValue={title}
-                        onBlur={(e) => setTitle(e.currentTarget.value)}
-                        className="peer w-full rounded-lg border border-lead-700 bg-lead-900 px-4 py-2 text-[28px] text-white outline-none transition-all focus:border-lead-700 focus:ring-1 focus:ring-lead-700"
-                    />
-                    
-                    <label
-                        htmlFor={"titleInput"}
-                        className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-[32px] text-lead-400 transition-all duration-200 ease-out 
-                        /* Quando o input está focado */
-                        peer-focus:-top-8 peer-focus:translate-y-0 peer-focus:text-[20px] peer-focus:font-medium peer-focus:text-crimson-400
-                        /* Quando o input NÃO está vazio (tem texto digitado) */
-                        peer-[:not(:placeholder-shown)]:-top-8 peer-[:not(:placeholder-shown)]:translate-y-0 peer-[:not(:placeholder-shown)]:text-[20px] peer-[:not(:placeholder-shown)]:text-crimson-500"
-                    >
-                        {"Título do Anime"}
-                    </label>
-                </div>
+    const editedAnime: AnimeData = {
+      title: title.trim(),
+      season: parseNonNegative(season),
+      episode: parseNonNegative(episode),
+      releaseDay,
+      isFinished: finished,
+      favorite: isFavorite,
+      needToWatch: ntw,
+      waitingForNextSeason: waiting,
+      watched,
+    };
 
-                <div className="w-full flex items-center">
-                    <div className="w-fit shrink-0">
-                        <div className="relative w-full">
-                            <input
-                                id={"seasonInput"}
-                                /* O truque do CSS: um espaço em branco no placeholder */
-                                placeholder=" "
-                                defaultValue={season}
-                                onBlur={(e) => setSeason(e.currentTarget.value)}
-                                min={0}
-                                className="peer w-[325px] rounded-lg border border-lead-700 bg-lead-900 px-4 py-2 text-[28px] text-white outline-none transition-all focus:border-lead-700 focus:ring-1 focus:ring-lead-700"
-                            />
-                            
-                            <label
-                                htmlFor={"seasonInput"}
-                                className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-[32px] text-lead-400 transition-all duration-200 ease-out 
-                                /* Quando o input está focado */
-                                peer-focus:-top-8 peer-focus:translate-y-0 peer-focus:text-[20px] peer-focus:font-medium peer-focus:text-crimson-400
-                                /* Quando o input NÃO está vazio (tem texto digitado) */
-                                peer-[:not(:placeholder-shown)]:-top-8 peer-[:not(:placeholder-shown)]:translate-y-0 peer-[:not(:placeholder-shown)]:text-[20px] peer-[:not(:placeholder-shown)]:text-crimson-500"
-                            >
-                                {"Temporada Atual"}
-                            </label>
-                        </div>
-                    </div>
-                    <div className="w-full flex items-center justify-center">
-                        {isFavorite ? (
-                            <button className="text-amber-300 hover:cursor-pointer" onClick={() => setIsFavorite(!isFavorite)}>
-                                <FaStar size={46}/>
-                            </button>  
-                        ) : (
-                            <button className="text-amber-300 hover:cursor-pointer" onClick={() => setIsFavorite(!isFavorite)}>
-                                <FaRegStar size={46}/>
-                            </button> 
-                        )}
-                    </div>
-                </div>
-                
-                <div className="w-full flex items-center gap-2">
-                    <div className="w-fit shrink-0">
-                        <div className="relative w-full">
-                            <input
-                                id={"episodeInput"}
-                                /* O truque do CSS: um espaço em branco no placeholder */
-                                placeholder=" "
-                                defaultValue={episode}
-                                onBlur={(e) => setEpisode(e.currentTarget.value)}
-                                className="peer w-[285px] rounded-lg border border-lead-700 bg-lead-900 px-4 py-2 text-[28px] text-white outline-none transition-all focus:border-lead-700 focus:ring-1 focus:ring-lead-700"
-                            />
-                            
-                            <label
-                                htmlFor={"episodeInput"}
-                                className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-[32px] text-lead-400 transition-all duration-200 ease-out 
-                                /* Quando o input está focado */
-                                peer-focus:-top-8 peer-focus:translate-y-0 peer-focus:text-[20px] peer-focus:font-medium peer-focus:text-crimson-400
-                                /* Quando o input NÃO está vazio (tem texto digitado) */
-                                peer-[:not(:placeholder-shown)]:-top-8 peer-[:not(:placeholder-shown)]:translate-y-0 peer-[:not(:placeholder-shown)]:text-[20px] peer-[:not(:placeholder-shown)]:text-crimson-500"
-                            >
-                                {"Episódio Atual"}
-                            </label>
-                        </div>
-                    </div>
-                    <div className="w-full flex items-center justify-center">
-                        <ReleaseDayDropdown initialValue={releaseDay}/>
-                    </div>
-                </div>
+    setSaving(true);
+    const result = await Promise.resolve(setEditAnime(id, editedAnime));
+    setSaving(false);
 
-                <div className="flex flex-col w-full gap-0.5 justify-center items-center">
-                    <div className="flex flex-col w-full items-center justify-center shrink-0">
-                        <p className="text-[24px] text-lead-200 font-bold shrink-0">Status do Anime: </p>
-                        <AnimeStatusRadio isFinished={finished} waiting={waiting} />
-                    </div>
+    if (result !== null) setEditForm(false);
+  };
 
-                    <div className="flex flex-col w-full items-center justify-center">
-                        <p className="text-[24px] text-lead-200 font-bold shrink-0">Status de Acompanhamento: </p>
-                        <AnimeWatchRadio ntw={ntw} watched={watched} />
-                    </div>
-                </div>
-            </div>
-            <button className="genericButton shrink-0" onClick={() => handleSend()}>
-                <p className="font-bold text-[20px] text-lead-200">Editar Anime</p>
+  return (
+    <animeFormContext.Provider value={formContext}>
+      <Modal
+        title="Editar anime"
+        subtitle={animeData.title}
+        onClose={() => setEditForm(false)}
+        footer={
+          <>
+            <button
+              type="button"
+              className="btn-secondary"
+              onClick={() => setEditForm(false)}
+              disabled={saving}
+            >
+              Cancelar
             </button>
-        </div>
-        </animeFormContext.Provider>
-    );
+            <button
+              type="submit"
+              form="anime-edition-form"
+              className="btn-primary"
+              disabled={saving}
+            >
+              {saving ? "Salvando..." : "Salvar alterações"}
+            </button>
+          </>
+        }
+      >
+        <form id="anime-edition-form" onSubmit={handleSubmit} className="space-y-6">
+          <div>
+            <label htmlFor="edit-anime-title" className="field-label">
+              Título do anime
+            </label>
+            <input
+              id="edit-anime-title"
+              value={title}
+              onChange={(event) => {
+                setTitle(event.target.value);
+                setTitleError(false);
+              }}
+              maxLength={255}
+              className={`input ${titleError ? "border-red-500/70" : ""}`}
+              autoFocus
+            />
+            {titleError && (
+              <p className="mt-1.5 text-xs text-red-300">O título é obrigatório.</p>
+            )}
+          </div>
 
+          <div className="grid gap-4 sm:grid-cols-3">
+            <div>
+              <label htmlFor="edit-anime-season" className="field-label">
+                Temporada
+              </label>
+              <input
+                id="edit-anime-season"
+                type="number"
+                min={0}
+                value={season}
+                onChange={(event) => setSeason(event.target.value)}
+                className="input"
+              />
+            </div>
+            <div>
+              <label htmlFor="edit-anime-episode" className="field-label">
+                Episódio atual
+              </label>
+              <input
+                id="edit-anime-episode"
+                type="number"
+                min={0}
+                value={episode}
+                onChange={(event) => setEpisode(event.target.value)}
+                className="input"
+              />
+            </div>
+            <div>
+              <label className="field-label">Atualiza em</label>
+              <ReleaseDayDropdown initialValue={releaseDay} />
+            </div>
+          </div>
+
+          <button
+            type="button"
+            onClick={() => setIsFavorite((current) => !current)}
+            className={`flex w-full items-center gap-3 rounded-xl border px-4 py-3 text-left transition-all ${
+              isFavorite
+                ? "border-amber-500/40 bg-amber-500/10"
+                : "border-lead-700 bg-lead-950/40 hover:border-lead-500"
+            }`}
+          >
+            <span
+              className={`flex h-9 w-9 items-center justify-center rounded-lg ${
+                isFavorite ? "bg-amber-500/20 text-amber-300" : "bg-lead-800 text-lead-400"
+              }`}
+            >
+              <FiStar size={18} fill={isFavorite ? "currentColor" : "none"} />
+            </span>
+            <span className="min-w-0 flex-1">
+              <span className="block text-sm font-semibold text-lead-100">
+                Marcar como favorito
+              </span>
+              <span className="block text-xs text-lead-400">
+                Mantém o anime na lista Favoritos.
+              </span>
+            </span>
+            <span
+              className={`h-5 w-9 rounded-full p-0.5 transition-colors ${
+                isFavorite ? "bg-amber-500" : "bg-lead-600"
+              }`}
+            >
+              <span
+                className={`block h-4 w-4 rounded-full bg-white transition-transform ${
+                  isFavorite ? "translate-x-4" : "translate-x-0"
+                }`}
+              />
+            </span>
+          </button>
+
+          <div className="space-y-3">
+            <div>
+              <p className="mb-2 text-sm font-semibold text-lead-100">Status do anime</p>
+              <AnimeStatusRadio isFinished={finished} waiting={waiting} />
+            </div>
+            <div>
+              <p className="mb-2 text-sm font-semibold text-lead-100">
+                Status de acompanhamento
+              </p>
+              <AnimeWatchRadio ntw={ntw} watched={watched} />
+            </div>
+          </div>
+        </form>
+      </Modal>
+    </animeFormContext.Provider>
+  );
 }

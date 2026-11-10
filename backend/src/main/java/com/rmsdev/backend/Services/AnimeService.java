@@ -2,13 +2,13 @@ package com.rmsdev.backend.Services;
 
 import com.rmsdev.backend.DTOs.Requests.AnimeDTO;
 import com.rmsdev.backend.DTOs.Requests.EditAnimeDTO;
-import com.rmsdev.backend.DTOs.Requests.UpdateAnimeDTO;
 import com.rmsdev.backend.DTOs.Responses.AnimeResponseDTO;
 import com.rmsdev.backend.Entities.Anime;
 import com.rmsdev.backend.Entities.AnimeList;
 import com.rmsdev.backend.Enums.FilterOptions;
 import com.rmsdev.backend.Repositories.AnimeListRepository;
 import com.rmsdev.backend.Repositories.AnimeRepository;
+import com.rmsdev.backend.Security.CurrentAccountProvider;
 import com.rmsdev.backend.Utils.Exceptions.BusinessException;
 import com.rmsdev.backend.Utils.Exceptions.ConflictException;
 import com.rmsdev.backend.Utils.Exceptions.ResourceNotFoundException;
@@ -16,117 +16,88 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
-import java.util.*;
+import java.util.List;
+import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
 @Slf4j
+@Transactional(readOnly = true)
 public class AnimeService {
+
+    private static final String DEFAULT_LIST = "Favoritos";
 
     private final AnimeRepository animeRepository;
     private final AnimeListRepository animeListRepository;
+    private final CurrentAccountProvider currentAccountProvider;
 
     public List<AnimeResponseDTO> getAnimes(String search, FilterOptions filter) {
-
-        log.info("Attempting to get animes data!");
+        log.info("Fetching animes (search: {}, filter: {})", search, filter);
 
         List<Anime> animes;
 
         if (search != null && !search.trim().isEmpty()) {
-            log.info("Searching for {}!", search);
-            animes = animeRepository.findByTitleContainingIgnoreCase(search.trim());
-            log.info("Sending back results: {}", animes);
+            animes = animeRepository.findByTitleContainingIgnoreCaseOrderByTitleAsc(search.trim());
         } else if (filter != null) {
-            log.info("Filtering for {}", filter);
-            if (filter == FilterOptions.FAVORITOS) {
-                animes = animeRepository.findFavoriteAnimes();
-            } else if (filter == FilterOptions.COMEÇAR) {
-                animes = animeRepository.findNeedToWatchAnimes();
-            } else if (filter == FilterOptions.ASSISTIDOS) {
-                animes = animeRepository.findWatchedAnimes();
-            } else {
-                animes = animeRepository.findCurrentlyWatchingAnimes();
-            }
-            log.info("Sending back results: {}", animes);
+            animes = switch (filter) {
+                case FAVORITOS -> animeRepository.findByFavoriteTrue();
+                case COMEÇAR -> animeRepository.findByNeedToWatchTrue();
+                case ASSISTIDOS -> animeRepository.findByIsFinishedTrueAndWaitingForNextSeasonFalse();
+                case ASSISTINDO -> animeRepository.findByNeedToWatchFalseAndWatchedFalse();
+            };
         } else {
-            log.info("Since there was not a search query, sending back all animes data!");
             animes = animeRepository.findAll();
         }
 
-        return animes.stream().map(anime -> new AnimeResponseDTO(anime)).toList();
+        return animes.stream().map(AnimeResponseDTO::new).toList();
     }
 
     public AnimeResponseDTO getAnimeById(UUID animeId) {
-
-        log.info("Attempting to get data of anime (id: {})!", animeId);
-
         Anime anime = animeRepository.findById(animeId)
                 .orElseThrow(() -> new ResourceNotFoundException("Anime (id: " + animeId + ") was not found"));
-
-        log.info("Sending back {} data!", anime.getTitle());
 
         return new AnimeResponseDTO(anime);
     }
 
+    @Transactional
     public AnimeResponseDTO createAnime(AnimeDTO dto) {
-
-        log.info("Attempting to create new Anime!");
-
-        if (animeRepository.existsByTitleIgnoreCase(dto.title())) {
-            log.info("Anime {} already exists!", dto.title());
+        if (animeRepository.existsByTitleIgnoreCase(dto.title().trim())) {
             throw new ConflictException("Anime " + dto.title() + " already exists!");
         }
 
         Anime newAnime = Anime.builder()
-                .id(null)
                 .releaseDay(dto.releaseDay())
-                .lists(new ArrayList<>())
                 .episode(dto.episode())
                 .season(dto.season())
                 .watched(dto.watched())
                 .favorite(dto.favorite())
                 .waitingForNextSeason(dto.waitingForNextSeason())
                 .isFinished(dto.isFinished())
-                .title(dto.title())
+                .title(dto.title().trim())
                 .needToWatch(dto.needToWatch())
                 .build();
 
         Anime saved = animeRepository.save(newAnime);
+        syncFavoritesList(saved);
 
-        AnimeList favoritos = animeListRepository.findByName("Favoritos")
-                .orElseThrow(() -> new BusinessException("Something wen't REALLY wrong.", HttpStatus.INTERNAL_SERVER_ERROR));
-
-        var favAnimes = favoritos.getAnimes();
-        if (saved.isFavorite()) {
-            if (!favAnimes.contains(saved)) {
-                log.info("{} become a favorite anime! Adding it to Favoritos default list!", saved.getTitle());
-                favAnimes.add(saved);
-                favoritos.setAnimes(favAnimes);
-            }
-        } else {
-            if (favAnimes.contains(saved)) {
-                log.info("{} is not a favorite anime anymore! Removing it from Favoritos default list!", saved.getTitle());
-                favAnimes.remove(saved);
-            }
-        }
-
-        animeListRepository.save(favoritos);
-
-        log.info("New anime (id: {}) {} was successfully created!", saved.getId(), saved.getTitle());
-
+        log.info("Anime '{}' (id: {}) created", saved.getTitle(), saved.getId());
         return new AnimeResponseDTO(saved);
-
     }
 
+    @Transactional
     public AnimeResponseDTO editAnimeById(UUID animeId, EditAnimeDTO dto) {
-
-        log.info("Attempting to edit anime (id: {})!", animeId);
-
         Anime anime = animeRepository.findById(animeId)
                 .orElseThrow(() -> new ResourceNotFoundException("Anime (id: " + animeId + ") was not found"));
 
-        log.info("Changes: {}", dto.toString());
+        if (dto.title() != null && !dto.title().isBlank()) {
+            String newTitle = dto.title().trim();
+            if (!newTitle.equalsIgnoreCase(anime.getTitle()) && animeRepository.existsByTitleIgnoreCase(newTitle)) {
+                throw new ConflictException("Anime " + newTitle + " already exists!");
+            }
+            anime.setTitle(newTitle);
+        }
 
         if (dto.season() != null && dto.season() >= 0) {
             anime.setSeason(dto.season());
@@ -152,10 +123,6 @@ public class AnimeService {
             anime.setWatched(dto.watched());
         }
 
-        if (dto.title() != null && dto.title() != "") {
-            anime.setTitle(dto.title());
-        }
-
         if (dto.needToWatch() != null) {
             anime.setNeedToWatch(dto.needToWatch());
         }
@@ -165,50 +132,51 @@ public class AnimeService {
         }
 
         Anime saved = animeRepository.save(anime);
+        syncFavoritesList(saved);
 
-        AnimeList favoritos = animeListRepository.findByName("Favoritos")
-                .orElseThrow(() -> new BusinessException("Something wen't REALLY wrong.", HttpStatus.INTERNAL_SERVER_ERROR));
-
-        var favAnimes = favoritos.getAnimes();
-        if (saved.isFavorite()) {
-            if (!favAnimes.contains(saved)) {
-                log.info("{} become a favorite anime! Adding it to Favoritos default list!", saved.getTitle());
-                favAnimes.add(saved);
-                favoritos.setAnimes(favAnimes);
-            }
-        } else {
-            if (favAnimes.contains(saved)) {
-                log.info("{} is not a favorite anime anymore! Removing it from Favoritos default list!", saved.getTitle());
-                favAnimes.remove(saved);
-            }
-        }
-
-        animeListRepository.save(favoritos);
-
-        log.info("Anime {} edited successfully!", saved.getTitle());
-
+        log.info("Anime '{}' (id: {}) updated", saved.getTitle(), saved.getId());
         return new AnimeResponseDTO(saved);
-
     }
 
+    @Transactional
     public void deleteAnimeById(UUID animeId) {
-
-        log.info("Attempting to delete anime (id: {})", animeId);
-
         Anime anime = animeRepository.findById(animeId)
                 .orElseThrow(() -> new ResourceNotFoundException("Anime (id: " + animeId + ") was not found"));
 
-        List<AnimeList> lists = animeListRepository.findAll();
-        log.info("Removing {} from lists!", anime.getTitle());
-        for (AnimeList list : lists) {
-            if (list.getAnimes().contains(anime)) {
-                log.info("\tRemoving it from {}", list.getName());
-                list.getAnimes().remove((anime));
+        List<AnimeList> lists = animeListRepository.findAllByAnimesId(animeId);
+        lists.forEach(list -> list.getAnimes().removeIf(item -> item.getId().equals(animeId)));
+        animeListRepository.saveAll(lists);
+
+        animeRepository.delete(anime);
+        log.info("Anime '{}' (id: {}) deleted", anime.getTitle(), anime.getId());
+    }
+
+    /**
+     * Mantém a lista padrão "Favoritos" da conta autenticada em sincronia com o
+     * status de favorito do anime. Antes a busca era feita só pelo nome, o que
+     * quebrava quando existia mais de uma conta com uma lista "Favoritos".
+     */
+    private void syncFavoritesList(Anime anime) {
+        var account = currentAccountProvider.get();
+
+        AnimeList favorites = animeListRepository
+                .findFirstByOwnerIdAndNameIgnoreCaseOrderByNameAsc(account.getId(), DEFAULT_LIST)
+                .orElseThrow(() -> new BusinessException(
+                        "Default list Favoritos was not found for this account.",
+                        HttpStatus.INTERNAL_SERVER_ERROR));
+
+        boolean changed;
+        if (anime.isFavorite()) {
+            changed = favorites.getAnimes().stream().noneMatch(item -> item.getId().equals(anime.getId()));
+            if (changed) {
+                favorites.getAnimes().add(anime);
             }
+        } else {
+            changed = favorites.getAnimes().removeIf(item -> item.getId().equals(anime.getId()));
         }
 
-        log.info("Anime (id: {}) {} was sucessfully deleted!", anime.getId(), anime.getTitle());
-        animeListRepository.saveAll(lists);
-        animeRepository.deleteById(anime.getId());
+        if (changed) {
+            animeListRepository.save(favorites);
+        }
     }
 }

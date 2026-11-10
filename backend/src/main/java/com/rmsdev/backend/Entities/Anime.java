@@ -1,21 +1,36 @@
 package com.rmsdev.backend.Entities;
 
 import com.rmsdev.backend.Enums.ReleaseDay;
-import jakarta.persistence.*;
-import lombok.*;
-import lombok.extern.slf4j.Slf4j;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.Index;
+import jakarta.persistence.ManyToMany;
+import jakarta.persistence.Table;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 
 import java.util.List;
 import java.util.UUID;
 
 @Entity
-@Slf4j
 @Getter
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-@Table(name = "tb_animes")
+@Table(name = "tb_animes", indexes = {
+        @Index(name = "idx_anime_title", columnList = "title")
+})
 public class Anime {
 
     @Id
@@ -25,13 +40,15 @@ public class Anime {
 
     @Column(name = "title")
     private String title;
-    // Melhorar logs do Back.
+
     @Column(name = "season")
     private int season;
 
     @Column(name = "episode")
     private int episode;
 
+    @Enumerated(EnumType.ORDINAL)
+    @JdbcTypeCode(SqlTypes.SMALLINT)
     @Column(name = "release_day")
     private ReleaseDay releaseDay;
 
@@ -52,5 +69,4 @@ public class Anime {
 
     @ManyToMany(mappedBy = "animes")
     private List<AnimeList> lists;
-
 }

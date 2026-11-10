@@ -12,94 +12,73 @@ import com.rmsdev.backend.Utils.Exceptions.ConflictException;
 import com.rmsdev.backend.Utils.Exceptions.ResourceNotFoundException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.ArrayList;
-import java.util.List;
 
 @Service
 @Slf4j
 @RequiredArgsConstructor
+@Transactional(readOnly = true)
 public class AuthService {
 
-    @Autowired
-    private PasswordEncoder passwordEncoder;
-
-    @Autowired
-    private TokenService tokenService;
-
-    @Autowired
-    private AuthenticationManager manager;
-
+    private final PasswordEncoder passwordEncoder;
+    private final TokenService tokenService;
+    private final AuthenticationManager manager;
     private final AccountRepository accountRepository;
     private final AnimeListRepository animeListRepository;
 
+    @Transactional
     public LoginResponseDTO register(RegisterDTO dto) {
-        if (accountRepository.existsByEmail(dto.email()) || accountRepository.existsByNick(dto.nickname())) {
-            log.warn("{}/{} is already registered!", dto.nickname(), dto.email());
+        String nickname = dto.nickname().trim();
+        String email = dto.email().trim().toLowerCase();
+
+        if (accountRepository.existsByEmailIgnoreCase(email)
+                || accountRepository.existsByNickIgnoreCase(nickname)) {
             throw new ConflictException("Account with email/username already registered!");
         }
 
-        var encPass = passwordEncoder.encode(dto.password());
+        Account newAccount = Account.builder()
+                .password(passwordEncoder.encode(dto.password()))
+                .email(email)
+                .nick(nickname)
+                .lists(new ArrayList<>())
+                .build();
 
-        log.info("Creatong new account: Nick: {} | Email: {}", dto.nickname(), dto.email());
+        Account account = accountRepository.save(newAccount);
 
-        Account newAcc = new Account(
-                null,
-                encPass,
-                dto.email(),
-                dto.nickname(),
-                new ArrayList<>()
-        );
-
-        Account acc = accountRepository.save(newAcc);
-
-        var token = tokenService.gerarToken(acc);
-
-        AnimeList favorite = AnimeList.builder()
+        AnimeList favorites = AnimeList.builder()
                 .name("Favoritos")
-                .owner(acc)
-                .id(null)
+                .owner(account)
                 .animes(new ArrayList<>())
                 .build();
 
-        AnimeList savedList = animeListRepository.save(favorite);
+        animeListRepository.save(favorites);
 
-        List<AnimeList> curr = acc.getLists();
+        String token = tokenService.generateToken(account);
+        log.info("Account (id: {}) '{}' registered", account.getId(), account.getNick());
 
-        curr.add(savedList);
-
-        acc.setLists(curr);
-
-        accountRepository.save(acc);
-
-        log.info("{}'s account (id: {}) created successfully!", acc.getNick(), acc.getId());
-
-        return new LoginResponseDTO(acc.getId(), token);
+        return new LoginResponseDTO(account.getId(), token);
     }
 
     public LoginResponseDTO login(LoginDTO dto) {
-        log.info("Searching for account with login: {}", dto.login());
+        String login = dto.login().trim();
 
-        Account acc = accountRepository.findByNick(dto.login())
-                .orElseGet(() -> accountRepository.findByEmail(dto.login())
-                        .orElseThrow(() -> {
-                            log.warn("Account {} not found!", dto.login());
-                            return new ResourceNotFoundException("Account with credential: " + dto.login() + " not found!");
-                        }));
+        Account account = accountRepository.findFirstByNickIgnoreCaseOrderByIdAsc(login)
+                .orElseGet(() -> accountRepository.findFirstByEmailIgnoreCaseOrderByIdAsc(login)
+                        .orElseThrow(() -> new ResourceNotFoundException(
+                                "Account with credential: " + login + " not found!")));
 
-        var authToken = new UsernamePasswordAuthenticationToken(acc.getEmail(), dto.password());
-
+        var authToken = new UsernamePasswordAuthenticationToken(account.getEmail(), dto.password());
         manager.authenticate(authToken);
 
-        log.info("Account successfully authenticated! ID: {}", acc.getId());
+        String token = tokenService.generateToken(account);
+        log.info("Account (id: {}) authenticated", account.getId());
 
-        var token = tokenService.gerarToken(acc);
-
-        return new LoginResponseDTO(acc.getId(), token);
+        return new LoginResponseDTO(account.getId(), token);
     }
 }

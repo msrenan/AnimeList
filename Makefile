@@ -6,7 +6,7 @@ BACKUP_FILE  = /backups/dump.sql
 COMPOSE      = docker compose -f ./backend/compose.yaml
 
 # --- REGISTRO DE COMANDOS (Evita conflito com arquivos de mesmo nome) ---
-.PHONY: help up down backup logs restart
+.PHONY: help up down backup logs restart run clear test build
 
 # Target padrão executado ao digitar apenas 'make'
 help:
@@ -15,6 +15,8 @@ help:
 	@echo "  make backup  - Gera um dump do banco de dados"
 	@echo "  make down    - Gera backup e derruba os contêineres"
 	@echo "  make logs    - Acompanha os logs em tempo real"
+	@echo "  make test    - Roda testes do backend e lint/build do frontend"
+	@echo "  make build   - Gera os artefatos de produção"
 
 up:
 	sudo $(COMPOSE) up -d
@@ -38,3 +40,11 @@ run:
 
 clear:
 	./clear.sh
+
+test:
+	cd backend && ./mvnw test
+	cd frontend && npm run lint && npm run build
+
+build:
+	cd backend && ./mvnw clean package -DskipTests
+	cd frontend && npm run build

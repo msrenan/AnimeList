@@ -1,96 +1,172 @@
-import { useContext, useEffect, useState } from "react";
+import { useContext, useState } from "react";
 import { useNavigate } from "react-router";
+import {
+  FiAlertCircle,
+  FiEye,
+  FiEyeOff,
+  FiLock,
+  FiLogIn,
+  FiUser,
+} from "react-icons/fi";
+import { LuLoaderCircle } from "react-icons/lu";
+import { MdLocalMovies } from "react-icons/md";
 import { useAuth } from "../hooks/useAuth";
 import { loginContext } from "../types/context";
-
+import { getApiErrorMessage, getApiFieldErrors } from "../api/axios";
+import AuthLayout from "../components/AuthLayout";
 
 export default function Login() {
+  const navigate = useNavigate();
+  const { login } = useAuth();
+  const { isLoggedIn, storeId } = useContext(loginContext);
 
-    const navigate = useNavigate();
+  const [loginCred, setLoginCred] = useState("");
+  const [pass, setPass] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
 
-    const [loginCred, setLoginCred] = useState<string>("");
-    const [pass, setPass] = useState<string>("");
+  const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    setError(null);
+    setFieldErrors({});
 
-    const {login, token, accountId} = useAuth();
+    if (!loginCred.trim() || !pass) {
+      setError("Preencha o e-mail/usuário e a senha para continuar.");
+      return;
+    }
 
-    const {isLoggedIn, storeId} = useContext(loginContext);
+    setLoading(true);
+    try {
+      const response = await login(loginCred, pass);
+      storeId(response.accountId);
+      isLoggedIn(true);
+      navigate("/home");
+    } catch (loginError) {
+      setError(getApiErrorMessage(loginError));
+      setFieldErrors(getApiFieldErrors(loginError) ?? {});
+    } finally {
+      setLoading(false);
+    }
+  };
 
-    useEffect(() => {
-        console.log(`Token received: ${token}`)
-        if (token && token != "") {
-            localStorage.setItem("AccountToken", token);
-            navigate("/home");
-            storeId(accountId);
-            isLoggedIn(true);
-        }
-    }, [token])
+  return (
+    <AuthLayout>
+      <div className="mx-auto flex h-full w-full max-w-sm flex-col justify-center">
+        <div className="mb-8 flex items-center gap-3 lg:hidden">
+          <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-crimson-500 to-crimson-800 text-white">
+            <MdLocalMovies size={20} />
+          </span>
+          <span className="font-display text-lg font-bold text-white">
+            Anime<span className="text-crimson-400">List</span>
+          </span>
+        </div>
 
-    return(
-        <>
-        
-            <div className="absolute top-1/2 left-1/2 -translate-x-[400px]
-                            -translate-y-[275px] bg-lead-800 w-[800px] h-[560px]
-                            rounded-[16px] shadow-md flex flex-col items-center p-5 gap-[60px]
-                            overflow-hidden">
-                
-                <h1 className="font-bold text-[48px]">Login</h1>
-                <div className="relative w-full">
-                    <input
-                        id={"login"}
-                        /* O truque do CSS: um espaço em branco no placeholder */
-                        placeholder=" "
-                        onBlur={(e) => setLoginCred(e.currentTarget.value)}
-                        className="peer w-full rounded-lg border border-lead-700 bg-lead-900 px-4 py-2 text-[32px] text-white outline-none transition-all focus:border-lead-700 focus:ring-1 focus:ring-lead-700"
-                    />
-                    
-                    <label
-                        htmlFor={"login"}
-                        className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-[32px] text-lead-400 transition-all duration-200 ease-out 
-                        /* Quando o input está focado */
-                        peer-focus:-top-8 peer-focus:translate-y-0 peer-focus:text-[20px] peer-focus:font-medium peer-focus:text-lead-400
-                        /* Quando o input NÃO está vazio (tem texto digitado) */
-                        peer-[:not(:placeholder-shown)]:-top-8 peer-[:not(:placeholder-shown)]:translate-y-0 peer-[:not(:placeholder-shown)]:text-[20px] peer-[:not(:placeholder-shown)]:text-lead-500"
-                    >
-                        {"Email/Nickname"}
-                    </label>
-                </div>
+        <p className="text-xs font-semibold tracking-[0.2em] text-crimson-400 uppercase">
+          Bem-vindo de volta
+        </p>
+        <h2 className="mt-2 font-display text-3xl font-bold tracking-tight text-white">
+          Entre na sua conta
+        </h2>
+        <p className="mt-2 text-sm text-lead-300">
+          Continue de onde parou e acompanhe seus animes.
+        </p>
 
-                <div className="relative w-full">
-                    <input
-                        id={"pass"}
-                        /* O truque do CSS: um espaço em branco no placeholder */
-                        placeholder=" "
-                        type="password"
-                        onBlur={(e) => setPass(e.currentTarget.value)}
-                        className="peer w-full rounded-lg border border-lead-700 bg-lead-900 px-4 py-2 text-[32px] text-white outline-none transition-all focus:border-lead-700 focus:ring-1 focus:ring-lead-700"
-                    />
-                    
-                    <label
-                        htmlFor={"pass"}
-                        className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-[32px] text-lead-400 transition-all duration-200 ease-out 
-                        /* Quando o input está focado */
-                        peer-focus:-top-8 peer-focus:translate-y-0 peer-focus:text-[20px] peer-focus:font-medium peer-focus:text-lead-400
-                        /* Quando o input NÃO está vazio (tem texto digitado) */
-                        peer-[:not(:placeholder-shown)]:-top-8 peer-[:not(:placeholder-shown)]:translate-y-0 peer-[:not(:placeholder-shown)]:text-[20px] peer-[:not(:placeholder-shown)]:text-lead-500"
-                    >
-                        {"Password"}
-                    </label>
-                </div>
-                <div className="w-full flex flex-col justify-center items-center">
-                    <button className="font-bold text-[32px] bg-crimson-500 py-3 px-[50px]
-                        rounded-[16px] shadow-md hover:bg-crimson-900 hover:cursor-pointer transition-all"
-                            onClick={() => login(loginCred, pass)}>
-                        Entrar
-                    </button>
-                    <p className="font-semibold text-crimson-100 text-[24px] hover:text-crimson-500
-                                hover:cursor-pointer transition-all"
-                        onClick={() => navigate("/register")}>
-                        <u>Não possuí uma conta? Clique aqui para se registrar!</u>
-                    </p>
-                </div>
+        <form onSubmit={handleSubmit} className="mt-8 space-y-5" noValidate>
+          <div>
+            <label htmlFor="login" className="field-label">
+              E-mail ou nickname
+            </label>
+            <div className="relative">
+              <FiUser
+                size={17}
+                className="pointer-events-none absolute top-1/2 left-4 -translate-y-1/2 text-lead-400"
+              />
+              <input
+                id="login"
+                value={loginCred}
+                onChange={(event) => setLoginCred(event.target.value)}
+                placeholder="seu@email.com"
+                autoComplete="username"
+                autoFocus
+                className={`input h-12 pl-11 ${
+                  fieldErrors.login ? "border-red-500/70" : ""
+                }`}
+              />
             </div>
-        
-        </>
-    );
+            {fieldErrors.login && (
+              <p className="mt-1.5 text-xs text-red-300">{fieldErrors.login}</p>
+            )}
+          </div>
 
+          <div>
+            <label htmlFor="password" className="field-label">
+              Senha
+            </label>
+            <div className="relative">
+              <FiLock
+                size={17}
+                className="pointer-events-none absolute top-1/2 left-4 -translate-y-1/2 text-lead-400"
+              />
+              <input
+                id="password"
+                type={showPassword ? "text" : "password"}
+                value={pass}
+                onChange={(event) => setPass(event.target.value)}
+                placeholder="••••••••"
+                autoComplete="current-password"
+                className={`input h-12 pr-11 pl-11 ${
+                  fieldErrors.password ? "border-red-500/70" : ""
+                }`}
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword((current) => !current)}
+                className="absolute top-1/2 right-2.5 flex h-8 w-8 -translate-y-1/2 cursor-pointer items-center justify-center rounded-lg text-lead-400 transition-colors hover:bg-lead-700 hover:text-white"
+                aria-label={showPassword ? "Ocultar senha" : "Mostrar senha"}
+              >
+                {showPassword ? <FiEyeOff size={17} /> : <FiEye size={17} />}
+              </button>
+            </div>
+            {fieldErrors.password && (
+              <p className="mt-1.5 text-xs text-red-300">{fieldErrors.password}</p>
+            )}
+          </div>
+
+          {error && (
+            <div className="flex items-start gap-2.5 rounded-xl border border-red-500/25 bg-red-500/10 px-3.5 py-3 text-sm text-red-200">
+              <FiAlertCircle size={17} className="mt-0.5 shrink-0" />
+              <span>{error}</span>
+            </div>
+          )}
+
+          <button type="submit" disabled={loading} className="btn-primary h-12 w-full text-sm">
+            {loading ? (
+              <>
+                <LuLoaderCircle size={18} className="animate-spin" />
+                Entrando...
+              </>
+            ) : (
+              <>
+                <FiLogIn size={17} />
+                Entrar
+              </>
+            )}
+          </button>
+        </form>
+
+        <div className="mt-6 text-center text-sm text-lead-400">
+          Ainda não tem uma conta?{" "}
+          <button
+            type="button"
+            onClick={() => navigate("/register")}
+            className="cursor-pointer font-semibold text-crimson-400 transition-colors hover:text-crimson-300"
+          >
+            Criar conta
+          </button>
+        </div>
+      </div>
+    </AuthLayout>
+  );
 }

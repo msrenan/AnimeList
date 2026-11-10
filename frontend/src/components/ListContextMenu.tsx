@@ -1,66 +1,65 @@
-import { useContext, useEffect, useRef, useState } from "react";
-import { MdEdit } from "react-icons/md";
+import { useContext, useEffect, useRef } from "react";
+import { createPortal } from "react-dom";
+import { FiEdit2, FiTrash2 } from "react-icons/fi";
 import { listCardContext } from "../types/context";
-import { FaTrashAlt } from "react-icons/fa";
 
-type props = {
-    x: number,
-    y: number,
-    isSpecial: boolean
-}
+type ListContextMenuProps = {
+  x: number;
+  y: number;
+  isSpecial: boolean;
+};
 
-export default function ListContextMenu(data: props) {
+export default function ListContextMenu({ x, y, isSpecial }: ListContextMenuProps) {
+  const menuRef = useRef<HTMLDivElement>(null);
+  const { setMenuView, setMenuOption } = useContext(listCardContext);
 
-    const menuRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const handlePointerDown = (event: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
+        setMenuView(false);
+      }
+    };
 
-    const [x] = useState<number>(data.x);
-    const [y] = useState<number>(data.y);
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setMenuView(false);
+    };
 
-    const { view, setMenuView, setMenuOption } = useContext(listCardContext);
+    document.addEventListener("mousedown", handlePointerDown);
+    document.addEventListener("keydown", handleKeyDown);
+    return () => {
+      document.removeEventListener("mousedown", handlePointerDown);
+      document.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [setMenuView]);
 
-    useEffect(() => {
-        if (!view) return;
+  const clampedX = Math.min(x, window.innerWidth - 240);
+  const clampedY = Math.min(y, window.innerHeight - 150);
 
-        const handleClickOutside = (e: MouseEvent) => {
-            // Se o clique foi fora do container pai, fecha o dropdown
-            if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
-                setMenuView(false);
-            }
-        };
-
-        document.addEventListener("mousedown", handleClickOutside);
-        return () => {
-            document.removeEventListener("mousedown", handleClickOutside);
-        };
-    }, [view]);
-
-    return (
-        <div className={`absolute w-fit h-fit flex items-center justify-center
-        bg-lead-600 border-2 border-lead-200 rounded-[12px] py-5 z-20`}
-            style={{ top: `${y}px`, left: `${x}px` }}
-            ref={menuRef}>
-            <div className=" flex flex-col items-center justify-center w-[280px] h-fit max-h-[150px]">
-                <div className="animeMenuRow"
-                onClick={() => setMenuOption('editAnime')}
-                >
-                    <MdEdit size={22} />
-
-                    <p className="font-bold text-[18px]">
-                        Editar
-                    </p>
-                </div>
-                {!data.isSpecial && (
-                    <div className="animeMenuRow" onClick={() => setMenuOption('remove')}>
-                        <FaTrashAlt size={22} />
-
-                        <p className="font-bold text-[18px]">
-                            Remover da Lista
-                        </p>
-                    </div>
-                )}
-                
-            </div>
-
-        </div>
-    );
+  return createPortal(
+    <div
+      ref={menuRef}
+      className="panel fixed z-[60] w-[220px] animate-pop overflow-hidden p-1.5"
+      style={{ top: clampedY, left: clampedX }}
+    >
+      <button
+        type="button"
+        className="flex w-full cursor-pointer items-center gap-2.5 rounded-lg px-3 py-2.5 text-left text-sm font-medium text-lead-200 transition-colors hover:bg-lead-700/70 hover:text-white"
+        onClick={() => setMenuOption("editAnime")}
+      >
+        <FiEdit2 size={16} />
+        Editar anime
+      </button>
+      {!isSpecial && (
+        <button
+          type="button"
+          className="flex w-full cursor-pointer items-center gap-2.5 rounded-lg px-3 py-2.5 text-left text-sm font-medium text-red-300 transition-colors hover:bg-red-500/10"
+          onClick={() => setMenuOption("remove")}
+        >
+          <FiTrash2 size={16} />
+          Remover da lista
+        </button>
+      )}
+    </div>,
+    document.body,
+  );
 }

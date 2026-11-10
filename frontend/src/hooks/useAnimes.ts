@@ -1,96 +1,136 @@
-import { useState } from "react";
-import { type AnimeResponse } from "../types/api/Response";
-import { createAnime, deleteAnimeById, editAnimeById, getAnimes, getAnimesByFilter, searchAnimes } from "../api/routes/anime";
+import { useCallback, useState } from "react";
+import { toast } from "react-toastify";
+import type { AnimeResponse } from "../types/api/Response";
+import {
+  createAnime,
+  deleteAnimeById,
+  editAnimeById,
+  getAnimes,
+  getAnimesByFilter,
+  searchAnimes,
+} from "../api/routes/anime";
 import type { AnimeData, EditAnimeData } from "../types/api/Request";
 import type { FilterOptions } from "../types/enum";
+import { getApiErrorMessage } from "../api/axios";
+
+export function normalizeAnimes(list: AnimeResponse[]) {
+  const favorites = list.filter((anime) => anime.favorite);
+  const others = list.filter((anime) => !anime.favorite);
+
+  const byTitle = (a: AnimeResponse, b: AnimeResponse) => a.title.localeCompare(b.title);
+  favorites.sort(byTitle);
+  others.sort(byTitle);
+
+  return [...favorites, ...others];
+}
 
 export function useAnimes() {
+  const [animes, setAnimes] = useState<AnimeResponse[]>();
+  const [isLoading, setIsLoading] = useState<boolean>(false);
 
-    const [animes, setAnimes] = useState<AnimeResponse[]>();
-    const [isLoading, setIsLoading] = useState<boolean>(true);
-
-    const normalize = (list: AnimeResponse[]) => {
-        const favList = list.filter((anime) => anime.favorite);
-        const normList = list.filter((anime) => !anime.favorite);
-
-        favList.sort((a, b) => a.title.localeCompare(b.title));
-        normList.sort((a, b) => a.title.localeCompare(b.title));
-
-        return [...favList, ...normList];
-
+  const fetchAnimes = useCallback(async () => {
+    setIsLoading(true);
+    try {
+      const result = await getAnimes();
+      setAnimes(normalizeAnimes(result));
+      return normalizeAnimes(result);
+    } catch (error) {
+      toast.error(getApiErrorMessage(error));
+      return undefined;
+    } finally {
+      setIsLoading(false);
     }
+  }, []);
 
-    // Descobrir o porque da sincronização das listas não estar funcionando enquanto a dos animes funciona!
-
-    const fetchAnimes = async () => {
-        setIsLoading(true);
-        const allAnimes: AnimeResponse[] = await getAnimes();
-        if (allAnimes) {
-            setAnimes(normalize(allAnimes));
-            setIsLoading(false);
-        }
+  const animeSearch = useCallback(async (query: string) => {
+    setIsLoading(true);
+    try {
+      const result = query.trim() ? await searchAnimes(query) : await getAnimes();
+      const normalized = normalizeAnimes(result);
+      setAnimes(normalized);
+      return normalized;
+    } catch (error) {
+      toast.error(getApiErrorMessage(error));
+      return undefined;
+    } finally {
+      setIsLoading(false);
     }
+  }, []);
 
-    const animeSearch = async (query: string) => {
-        setIsLoading(true);
-        const result: AnimeResponse[] = await searchAnimes(query);
-
-        if (result && result != undefined) {
-            setAnimes(normalize(result));
-            setIsLoading(false);
-        }
+  const animeFilter = useCallback(async (filter?: FilterOptions) => {
+    setIsLoading(true);
+    try {
+      const result = filter ? await getAnimesByFilter(filter) : await getAnimes();
+      const normalized = normalizeAnimes(result);
+      setAnimes(normalized);
+      return normalized;
+    } catch (error) {
+      toast.error(getApiErrorMessage(error));
+      return undefined;
+    } finally {
+      setIsLoading(false);
     }
+  }, []);
 
-    const animeFilter = async (filter: FilterOptions) => {
-        setIsLoading(true);
-        const result: AnimeResponse[] = await getAnimesByFilter(filter);
-        if (result && result != undefined) {
-            setAnimes(normalize(result));
-            setIsLoading(false);
-            return normalize(result);
-        }
+  const addAnime = useCallback(async (newAnime: AnimeData) => {
+    try {
+      const result = await createAnime(newAnime);
+      setAnimes((current) => normalizeAnimes([...(current ?? []), result]));
+      toast.success("Anime adicionado à coleção!");
+      return result;
+    } catch (error) {
+      toast.error(getApiErrorMessage(error));
+      return null;
     }
+  }, []);
 
-    const addAnime = async (newAnime: AnimeData) => {
-        setIsLoading(true);
-        const result: AnimeResponse = await createAnime(newAnime);
-
-        if (result && result != undefined) {
-            setAnimes(l => {
-                if (l) return normalize([...l, result]);
-            });
-            setIsLoading(false);
-        }
+  const editAnime = useCallback(async (id: string, data: EditAnimeData) => {
+    try {
+      const result = await editAnimeById(id, data);
+      setAnimes((current) =>
+        current
+          ? normalizeAnimes(current.map((anime) => (anime.id === id ? result : anime)))
+          : current,
+      );
+      return result;
+    } catch (error) {
+      toast.error(getApiErrorMessage(error));
+      return null;
     }
+  }, []);
 
-    const editAnime = async (id: string, data: EditAnimeData) => {
-        const result: AnimeResponse = await editAnimeById(id, data);
+  const toggleFavorite = useCallback(
+    async (anime: AnimeResponse) => {
+      const result = await editAnime(anime.id, { favorite: !anime.favorite });
+      if (result) {
+        toast.success(result.favorite ? "Adicionado aos favoritos!" : "Removido dos favoritos.");
+      }
+      return result;
+    },
+    [editAnime],
+  );
 
-        if (result && result != undefined) {
-            
-            if (animes) {
-                const updatedList = animes.map((anime) => {
-                    if (anime.id === id) return result;
-                    return anime;
-                })
-
-                setAnimes(normalize(updatedList));
-            }
-            
-        }
-    } 
-
-    const deleteAnime = async (id: string) => {
-        setIsLoading(true);
-        await deleteAnimeById(id);
-        if (animes) {
-            const updatedList = animes.filter((anime) => anime.id != id)
-
-            setAnimes(normalize(updatedList));
-            setIsLoading(false);
-        }
+  const deleteAnime = useCallback(async (id: string) => {
+    try {
+      await deleteAnimeById(id);
+      setAnimes((current) => current?.filter((anime) => anime.id !== id));
+      toast.success("Anime removido da coleção.");
+      return true;
+    } catch (error) {
+      toast.error(getApiErrorMessage(error));
+      return false;
     }
+  }, []);
 
-    return { animes, isLoading, setIsLoading, animeSearch, fetchAnimes, addAnime,
-        editAnime, deleteAnime, animeFilter};
+  return {
+    animes,
+    isLoading,
+    animeSearch,
+    fetchAnimes,
+    addAnime,
+    editAnime,
+    toggleFavorite,
+    deleteAnime,
+    animeFilter,
+  };
 }

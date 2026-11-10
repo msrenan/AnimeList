@@ -1,88 +1,258 @@
-
-@import url('https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&display=swap');
 @import "tailwindcss";
 
 @theme {
-  /* =========================================
-     BASE: Escala de Chumbo (Dark Lead / Charcoal)
-     ========================================= */
-  --color-lead-50: #f3f4f6;
-  --color-lead-100: #e5e7eb;
-  --color-lead-200: #c8cbd2;
-  --color-lead-300: #9fa5b2;
-  --color-lead-400: #737c8e;
-  --color-lead-500: #545d6e;
-  --color-lead-600: #3f4654;
-  --color-lead-700: #313743; /* Bordas e divisores escuros */
-  --color-lead-800: #222630; /* Elevado / Hover de cards */
-  --color-lead-900: #161920; /* Fundo de Cards / Modais */
-  --color-lead-950: #0f1116; /* Fundo Principal da Aplicação */
+  /* Base escura */
+  --color-lead-50: #f7f9fc;
+  --color-lead-100: #e3e8f1;
+  --color-lead-200: #b5c0d1;
+  --color-lead-300: #8794a9;
+  --color-lead-400: #5a677f;
+  --color-lead-500: #313a4d;
+  --color-lead-600: #242b3a;
+  --color-lead-700: #1a1f2b;
+  --color-lead-800: #12151d;
+  --color-lead-900: #0d0f14;
+  --color-lead-950: #08090d;
 
-  /* =========================================
-     DETALHES: Vários Tons de Vermelho (Red / Crimson)
-     ========================================= */
+  /* Destaque principal */
   --color-crimson-50: #fff1f2;
   --color-crimson-100: #ffe4e6;
   --color-crimson-200: #fecdd3;
   --color-crimson-300: #fda4af;
-  --color-crimson-400: #f87171; /* Vermelho Suave / Ícones secundários */
-  --color-crimson-500: #ef4444; /* Vermelho Vibrante / Destaque / Hover */
-  --color-crimson-600: #dc2626; /* Vermelho Primário (Botões/Links) */
-  --color-crimson-700: #b91c1c; /* Vermelho Fechado / Pressed state */
-  --color-crimson-800: #991b1b; /* Tom Vinho / Badges escuros */
-  --color-crimson-900: #7f1d1d; /* Detalhes sutis / Bordas de destaque */
-  --color-crimson-950: #450a0a; /* Sombra / Glows de fundo em vermelho */
+  --color-crimson-400: #fb7185;
+  --color-crimson-500: #f43f5e;
+  --color-crimson-600: #e11d48;
+  --color-crimson-700: #be123c;
+  --color-crimson-800: #9f1239;
+  --color-crimson-900: #881337;
+  --color-crimson-950: #4c0519;
 
-  /* =========================================
-     MAPEAMENTO SEMÂNTICO (Atalhos rápidos)
-     ========================================= */
+  /* Atalhos semânticos */
   --color-app-bg: var(--color-lead-950);
   --color-app-surface: var(--color-lead-900);
   --color-app-surface-hover: var(--color-lead-800);
   --color-app-border: var(--color-lead-700);
-
   --color-brand-primary: var(--color-crimson-600);
   --color-brand-hover: var(--color-crimson-500);
-  --color-brand-active: var(--color-crimson-700);
   --color-brand-muted: var(--color-crimson-900);
 
-  /* =========================================
-                      FONTES
-     ========================================= */
-
-  --font-inter: "Inter", sans-serif
+  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-display: "Sora", "Inter", ui-sans-serif, system-ui, sans-serif;
 }
 
-body {
-   @apply min-w-full min-h-full bg-app-bg text-lead-100 p-5 overflow-hidden
+@layer base {
+  * {
+    border-color: color-mix(in srgb, var(--color-lead-600) 70%, transparent);
+  }
+
+  html {
+    color-scheme: dark;
+    scrollbar-gutter: stable;
+  }
+
+  body {
+    min-height: 100dvh;
+    background-color: var(--color-lead-950);
+    color: var(--color-lead-100);
+    font-family: var(--font-sans);
+    -webkit-font-smoothing: antialiased;
+    background-image:
+      radial-gradient(60rem 40rem at 88% -12%, rgb(225 29 72 / 0.14), transparent 62%),
+      radial-gradient(50rem 32rem at -10% 110%, rgb(190 18 60 / 0.08), transparent 60%);
+    background-attachment: fixed;
+  }
+
+  ::selection {
+    background: var(--color-crimson-600);
+    color: white;
+  }
+
+  *::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+
+  *::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  *::-webkit-scrollbar-thumb {
+    background: var(--color-lead-600);
+    border-radius: 999px;
+  }
+
+  *::-webkit-scrollbar-thumb:hover {
+    background: var(--color-lead-500);
+  }
+
+  input[type="number"]::-webkit-inner-spin-button,
+  input[type="number"]::-webkit-outer-spin-button {
+    appearance: none;
+    margin: 0;
+  }
 }
 
-.navbarButton {
-   @apply w-[170px] h-[80%] p-1 hover:bg-lead-400 hover:cursor-pointer
-   rounded-[10px] transition-all text-[20px] font-semibold flex items-center justify-center gap-4
+@layer components {
+  .panel {
+    @apply rounded-3xl border border-lead-700/80 bg-lead-900/80 shadow-[0_24px_80px_-32px_rgba(0,0,0,0.9)] backdrop-blur-xl;
+  }
+
+  .panel-soft {
+    @apply rounded-2xl border border-lead-700/70 bg-lead-800/60;
+  }
+
+  .btn {
+    @apply inline-flex cursor-pointer items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-sm font-semibold transition-all duration-200 outline-none focus-visible:ring-2 focus-visible:ring-crimson-500/60 disabled:cursor-not-allowed disabled:opacity-50;
+  }
+
+  .btn-primary {
+    @apply inline-flex cursor-pointer items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-sm font-semibold transition-all duration-200 outline-none focus-visible:ring-2 focus-visible:ring-crimson-500/60 disabled:cursor-not-allowed disabled:opacity-50 bg-crimson-600 text-white shadow-[0_10px_30px_-12px_rgba(225,29,72,0.9)] hover:-translate-y-0.5 hover:bg-crimson-500 active:translate-y-0;
+  }
+
+  .btn-secondary {
+    @apply inline-flex cursor-pointer items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-sm font-semibold transition-all duration-200 outline-none focus-visible:ring-2 focus-visible:ring-crimson-500/60 disabled:cursor-not-allowed disabled:opacity-50 border border-lead-600 bg-lead-800 text-lead-100 hover:-translate-y-0.5 hover:border-lead-500 hover:bg-lead-700 active:translate-y-0;
+  }
+
+  .btn-ghost {
+    @apply inline-flex cursor-pointer items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-sm font-semibold transition-all duration-200 outline-none focus-visible:ring-2 focus-visible:ring-crimson-500/60 disabled:cursor-not-allowed disabled:opacity-50 text-lead-300 hover:bg-lead-800 hover:text-white;
+  }
+
+  .btn-danger {
+    @apply inline-flex cursor-pointer items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-sm font-semibold transition-all duration-200 outline-none focus-visible:ring-2 focus-visible:ring-crimson-500/60 disabled:cursor-not-allowed disabled:opacity-50 bg-red-600 text-white hover:-translate-y-0.5 hover:bg-red-500 active:translate-y-0;
+  }
+
+  .btn-icon {
+    @apply inline-flex h-9 w-9 cursor-pointer items-center justify-center rounded-xl text-lead-300 transition-all duration-200 outline-none hover:bg-lead-700/80 hover:text-white focus-visible:ring-2 focus-visible:ring-crimson-500/60;
+  }
+
+  .input {
+    @apply w-full rounded-xl border border-lead-600 bg-lead-950/70 px-4 py-3 text-sm text-white outline-none transition-all placeholder:text-lead-400 focus:border-crimson-500/70 focus:ring-2 focus:ring-crimson-500/20;
+  }
+
+  .field-label {
+    @apply mb-2 block text-xs font-semibold tracking-wide text-lead-300 uppercase;
+  }
+
+  .chip {
+    @apply inline-flex cursor-pointer items-center gap-2 rounded-full border border-lead-700 bg-lead-800/70 px-3.5 py-1.5 text-xs font-semibold text-lead-200 transition-all duration-200 hover:border-lead-500 hover:text-white;
+  }
+
+  .chip-active {
+    @apply border-crimson-500/60 bg-crimson-600/15 text-crimson-200;
+  }
+
+  .modal-overlay {
+    @apply fixed inset-0 z-50 flex items-center justify-center overflow-y-auto bg-black/70 p-4 backdrop-blur-sm;
+  }
+
+  .modal-panel {
+    @apply my-auto w-full rounded-3xl border border-lead-700 bg-lead-900 shadow-[0_40px_120px_-30px_rgba(0,0,0,0.95)];
+  }
+
+  .skeleton {
+    @apply animate-pulse rounded-xl bg-lead-800;
+  }
+
+  .soft-divider {
+    @apply h-px w-full bg-gradient-to-r from-transparent via-lead-700 to-transparent;
+  }
 }
 
-.animeCardInfo {
-   @apply font-light text-[20px] text-lead-200
+@layer utilities {
+  .text-balance {
+    text-wrap: balance;
+  }
+
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+
+  .no-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+
+  .animate-fade-up {
+    animation: fade-up 0.45s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+  }
+
+  .animate-fade-in {
+    animation: fade-in 0.25s ease-out both;
+  }
+
+  .animate-pop {
+    animation: pop 0.22s cubic-bezier(0.2, 0.9, 0.3, 1.2) both;
+  }
+
+  .animate-float {
+    animation: float 7s ease-in-out infinite;
+  }
 }
 
-.radioButton {
-   @apply appearance-none w-5 h-5 rounded-full cursor-pointer transition-all duration-100
-          bg-lead-900 border-2 border-lead-700 checked:bg-crimson-500 checked:ring-2 checked:ring-crimson-500
-          checked:border-[3px] checked:border-lead-950 outline-0 focus-visible:ring-2 focus-visible:ring-crimson-500/50
+@keyframes fade-up {
+  from {
+    opacity: 0;
+    transform: translateY(14px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
-.genericButton {
-   @apply w-[220px] h-[50px] rounded-[12px] bg-crimson-600 text-lead-100
-                                    flex justify-center items-center gap-1 hover:cursor-pointer
-                                    hover:-translate-y-0.5 hover:bg-crimson-800 transition-all
+@keyframes fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
 }
 
-.animeMenuRow {
-   @apply w-full h-fit hover:bg-crimson-300 transition-all hover:cursor-pointer flex
-   justify-center items-center gap-3 px-3 text-lead-300 hover:text-crimson-600
+@keyframes pop {
+  from {
+    opacity: 0;
+    transform: scale(0.96) translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
 }
 
-.vr {
-   @apply border-l-2
+@keyframes float {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-14px);
+  }
+}
+
+/* Toasts */
+.Toastify__toast {
+  border-radius: 14px !important;
+  border: 1px solid var(--color-lead-600) !important;
+  background: var(--color-lead-800) !important;
+  color: var(--color-lead-100) !important;
+  font-family: var(--font-sans) !important;
+  font-size: 13px !important;
+}
+
+.Toastify__close-button {
+  color: var(--color-lead-300) !important;
+}
+
+.Toastify__progress-bar {
+  background: var(--color-crimson-500) !important;
+}
+
+@media (max-width: 767px) {
+  .Toastify__toast-container--bottom-right {
+    bottom: 5.25rem !important;
+    left: 1rem !important;
+    right: 1rem !important;
+    width: auto !important;
+  }
 }

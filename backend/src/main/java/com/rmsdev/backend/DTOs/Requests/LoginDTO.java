@@ -1,13 +1,15 @@
 package com.rmsdev.backend.DTOs.Requests;
 
 import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Size;
 
 public record LoginDTO(
         @NotBlank(message = "Email/Username can't be blank!")
-        @NotNull(message = "Emaail/Username can't be null!")
+        @Size(max = 255, message = "Email/Username is too long!")
         String login,
-        @NotNull(message = "Password can't be blank!")
-        @NotBlank(message = "Password can't be null!")
-        String password) {
+
+        @NotBlank(message = "Password can't be blank!")
+        @Size(max = 100, message = "Password is too long!")
+        String password
+) {
 }

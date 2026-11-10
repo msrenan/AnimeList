@@ -1,163 +1,215 @@
-import { useContext, useEffect, useState } from "react";
+import { useContext, useMemo, useState } from "react";
+import {
+  FiCalendar,
+  FiEdit2,
+  FiMoreVertical,
+  FiStar,
+  FiTrash2,
+} from "react-icons/fi";
 import type { AnimeResponse } from "../types/api/Response";
-import { FaRegStar, FaStar, FaTrashAlt } from "react-icons/fa";
-import { animeCardContext, animeContext, type AnimeCardContext } from "../types/context";
-import type { EditAnimeData } from "../types/api/Request";
+import {
+  animeCardContext,
+  animeContext,
+  type AnimeCardContext,
+} from "../types/context";
+import {
+  formatReleaseDay,
+  getAnimeStatus,
+  getTrackingStatus,
+  gradientFor,
+  initials,
+  toneClass,
+} from "../utils/anime";
 import AnimeContextMenu from "./AnimeContextMenu";
 
-type props = {
-    animeData: AnimeResponse,
-    Ikey: string
-}
+type AnimeCardProps = {
+  animeData: AnimeResponse;
+  Ikey: string;
+};
 
-export default function AnimeCard(data: props) {
+export default function AnimeCard({ animeData, Ikey }: AnimeCardProps) {
+  const { setDirty, setEditForm, setShowDeleteModal, setAddAnimeToList } =
+    useContext(animeContext);
+  const [showMenu, setShowMenu] = useState(false);
+  const [menuCoord, setMenuCoord] = useState({ x: 0, y: 0 });
+  const [savingFavorite, setSavingFavorite] = useState(false);
 
-    const [info, setInfo] = useState<AnimeResponse>(data.animeData);
-    const [favorite, setFavorite] = useState<boolean>(data.animeData.favorite);
-    const [status, setStatus] = useState<string>("");
-    const [tracking, setTracking] = useState<string>("");
+  const status = getAnimeStatus(animeData);
+  const tracking = getTrackingStatus(animeData);
 
-    const [showMenu, setShowMenu] = useState<boolean>(false);
-    const [menuCoord, setMenuCoord] = useState<{x: number, y: number}>({x: 0, y: 0});
-
-    const { setDirty, setEditForm, setShowDeleteModal, setAddAnimeToList } = useContext(animeContext);
-
-    const updateCoords = (coords: {x: number, y: number}) => {
-        const maxX = window.innerWidth;
-        const maxY = window.innerHeight;
-
-        if (coords.x > maxX / 2 && coords.y > maxY / 2) {
-            setMenuCoord({x: coords.x - 280, y: coords.y - 105})
-        } else if (coords.x > maxX / 2 && coords.y <= maxY / 2) {
-            setMenuCoord({x: coords.x - 280, y: coords.y})
-        } else if (coords.x <= maxX / 2 && coords.y > maxY / 2) {
-            setMenuCoord({x: coords.x, y: coords.y - 105})
-        } else {
-            setMenuCoord({x: coords.x, y: coords.y});
-        }
-    }
-
-    const AnimeCardContextValue: AnimeCardContext = {
-        setMenuView: (view: boolean) => {
-            setShowMenu(view)
-        },
-        view: showMenu,
-        setMenuOption: (option: 'edit' | 'addToList', listId?: string) => {
-            if (option === 'edit') {
-                setEditForm(true, info);
-                setShowMenu(false);
-            } else {
-                if (listId) {
-                    setAddAnimeToList(info.id, listId)
-                    setShowMenu(false);
-                }
-            }
-            
+  const animeCardContextValue = useMemo<AnimeCardContext>(
+    () => ({
+      setMenuView: setShowMenu,
+      view: showMenu,
+      setMenuOption: (option, listId) => {
+        if (option === "edit") {
+          setEditForm(true, animeData);
+          setShowMenu(false);
+          return;
         }
 
-    }
-
-    useEffect(() => {
-        const updateInfo = () => {
-            setInfo(data.animeData)
-            setFavorite(data.animeData.favorite);
-            const finished = data.animeData.isFinished;
-            const waiting = data.animeData.waitingForNextSeason;
-            const ntw = data.animeData.needToWatch;
-            const watched = data.animeData.watched;
-
-            if (finished && !waiting) {
-                setStatus("Finalizado")
-            } else if (!finished && waiting) {
-                const waitingStr = "Esperando T" + (data.animeData.season + 1);
-                setStatus(waitingStr)
-            } else {
-                setStatus("On going")
-            }
-
-            if (ntw && !watched) {
-                setTracking("Começar");
-            } else if (!ntw && watched) {
-                setTracking("Assistido");
-            } else if (ntw && watched) {
-                setTracking("Rever")
-            } else {
-                setTracking("Assistindo");
-            }
+        if (option === "addToList" && listId) {
+          setAddAnimeToList(animeData.id, listId);
+          setShowMenu(false);
         }
+      },
+    }),
+    [showMenu, animeData, setEditForm, setAddAnimeToList],
+  );
 
-        updateInfo();
-    }, [data.animeData])
+  const toggleFavorite = async () => {
+    setSavingFavorite(true);
+    await setDirty(animeData.id, { favorite: !animeData.favorite });
+    setSavingFavorite(false);
+  };
 
-    useEffect(() => {
-        const updateFavorite = () => {
-            setInfo({...info, favorite: favorite});
-        }
-        if (favorite != data.animeData.favorite) {
-            const dirty: EditAnimeData = {
-                favorite: favorite
-            }
-            updateFavorite();
-            setDirty(info.id, dirty);
-        }
-        
-    }, [favorite])
+  const openMenuAt = (x: number, y: number) => {
+    setMenuCoord({
+      x: Math.min(x, window.innerWidth - 260),
+      y: Math.min(y, window.innerHeight - 210),
+    });
+    setShowMenu(true);
+  };
 
-    return(
-        <animeCardContext.Provider value={AnimeCardContextValue}>
+  return (
+    <animeCardContext.Provider value={animeCardContextValue}>
+      <article
+        key={Ikey}
+        onContextMenu={(event) => {
+          event.preventDefault();
+          openMenuAt(event.clientX, event.clientY);
+        }}
+        className="group relative flex h-full flex-col overflow-hidden rounded-2xl border border-lead-700/80 bg-lead-900/70 p-5 transition-all duration-300 hover:-translate-y-1 hover:border-crimson-500/40 hover:bg-lead-900 hover:shadow-[0_24px_60px_-28px_rgba(225,29,72,0.45)] animate-fade-up"
+      >
+        <div
+          className="absolute inset-x-0 top-0 h-[3px] opacity-70 transition-opacity duration-300 group-hover:opacity-100"
+          style={{ background: gradientFor(animeData.title) }}
+        />
 
-            <div className="w-[350px] h-[450px] rounded-[16px] bg-lead-500 flex flex-col
-                            items-center shrink-0 hover:-translate-y-0.5 transition-all
-                            hover:cursor-pointer p-5"
-                 key={data.Ikey}
-                 onContextMenu={(e: React.MouseEvent) => {
-                                e.preventDefault();
-                                updateCoords({x:e.clientX, y:e.clientY})
-                                setShowMenu(true);
-                                }}>
-                <div className="flex w-full items-center justify-between">
-                    <div className="flex items-center justify-center">
-                        <button className="text-crimson-900 hover:cursor-pointer hover:scale-[1.5]
-                            transition-all"
-                            onClick={() => setShowDeleteModal(true, info)}>
-                            <FaTrashAlt size={34} />
-                        </button>  
-                    </div>
-                    <div className="flex items-center justify-center">
-                        {favorite ? (
-                            <button className="text-amber-300 hover:cursor-pointer hover:scale-[1.5]
-                            transition-all"
-                            onClick={() => setFavorite(!favorite)}>
-                                <FaStar size={34} />
-                            </button>  
-                        ) : (
-                            <button className="text-amber-300 hover:cursor-pointer hover:scale-[1.5]
-                            transition-all"
-                            onClick={() => setFavorite(!favorite)}>
-                                <FaRegStar size={34}/>
-                            </button> 
-                        )}
-                    </div>
-                </div>
-                <div className="flex flex-col justify-center items-center h-full w-full">
-                    <h1 className="font-bold text-[28px] text-crimson-600 w-full text-center">{info.title}</h1>
-                    <p className="font-semibold text-[20px] text-crimson-500"><u>Informações:</u></p>
-                    <div className="flex flex-col h-full items-center justify-center">
-                        <p className="animeCardInfo">Temporada: {info.season}</p>
-                        <p className="animeCardInfo">Episódio: {info.episode}</p>
-                        <p className="animeCardInfo">Dia de Lançamento: {info.releaseDay}</p>
-                        <p className="animeCardInfo">Status: {status}</p>
-                        <p className="animeCardInfo">{tracking}</p>
-                    </div>
-                </div>
-                <p className="font-light text-lead-300 text-[16px]">Clique com o botão direito para editar!</p>
-            </div>
-            
-            {showMenu && menuCoord && (
-                <AnimeContextMenu x={menuCoord.x} y={menuCoord.y}/>
-            )}
-        
-        </animeCardContext.Provider>
-    );
-//TODO 1. Fechar com click outside 2. Forms com blur.
+        <div className="flex items-start justify-between gap-2">
+          <div className="flex flex-wrap gap-1.5">
+            <span
+              className={`rounded-full border px-2.5 py-1 text-[10px] font-semibold ${toneClass(
+                status.tone,
+              )}`}
+            >
+              {status.label}
+            </span>
+            <span
+              className={`rounded-full border px-2.5 py-1 text-[10px] font-semibold ${toneClass(
+                tracking.tone,
+              )}`}
+            >
+              {tracking.label}
+            </span>
+          </div>
+
+          <div className="flex shrink-0 items-center gap-0.5">
+            <button
+              type="button"
+              onClick={() => void toggleFavorite()}
+              disabled={savingFavorite}
+              className={`btn-icon h-8 w-8 ${
+                animeData.favorite
+                  ? "text-amber-300 hover:text-amber-200"
+                  : "text-lead-400 hover:text-amber-300"
+              }`}
+              aria-label={animeData.favorite ? "Remover dos favoritos" : "Adicionar aos favoritos"}
+              title={animeData.favorite ? "Remover dos favoritos" : "Adicionar aos favoritos"}
+            >
+              <FiStar size={16} fill={animeData.favorite ? "currentColor" : "none"} />
+            </button>
+            <button
+              type="button"
+              onClick={() => setEditForm(true, animeData)}
+              className="btn-icon h-8 w-8"
+              aria-label="Editar anime"
+              title="Editar anime"
+            >
+              <FiEdit2 size={15} />
+            </button>
+            <button
+              type="button"
+              onClick={() => setShowDeleteModal(true, animeData)}
+              className="btn-icon h-8 w-8 hover:bg-red-500/10 hover:text-red-300"
+              aria-label="Excluir anime"
+              title="Excluir anime"
+            >
+              <FiTrash2 size={15} />
+            </button>
+            <button
+              type="button"
+              onClick={(event) => {
+                const rect = event.currentTarget.getBoundingClientRect();
+                openMenuAt(rect.right - 240, rect.bottom + 8);
+              }}
+              className="btn-icon h-8 w-8"
+              aria-label="Mais opções"
+              title="Mais opções"
+            >
+              <FiMoreVertical size={16} />
+            </button>
+          </div>
+        </div>
+
+        <div className="mt-4 flex items-start gap-3.5">
+          <div
+            className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl text-base font-bold text-white shadow-lg"
+            style={{ background: gradientFor(animeData.title) }}
+          >
+            {initials(animeData.title)}
+          </div>
+          <div className="min-w-0">
+            <h3 className="line-clamp-2 font-display text-[17px] leading-snug font-semibold text-white">
+              {animeData.title}
+            </h3>
+            <p className="mt-1 text-xs text-lead-400">
+              {animeData.releaseDay
+                ? `Novos episódios na ${formatReleaseDay(animeData.releaseDay).toLowerCase()}`
+                : "Dia de lançamento não definido"}
+            </p>
+          </div>
+        </div>
+
+        <dl className="mt-5 grid grid-cols-3 gap-2">
+          <div className="rounded-xl border border-lead-700/70 bg-lead-950/50 px-3 py-2.5">
+            <dt className="text-[10px] font-semibold tracking-wide text-lead-500 uppercase">
+              Temporada
+            </dt>
+            <dd className="mt-0.5 text-sm font-semibold text-lead-100">{animeData.season}</dd>
+          </div>
+          <div className="rounded-xl border border-lead-700/70 bg-lead-950/50 px-3 py-2.5">
+            <dt className="text-[10px] font-semibold tracking-wide text-lead-500 uppercase">
+              Episódio
+            </dt>
+            <dd className="mt-0.5 text-sm font-semibold text-lead-100">{animeData.episode}</dd>
+          </div>
+          <div className="rounded-xl border border-lead-700/70 bg-lead-950/50 px-3 py-2.5">
+            <dt className="text-[10px] font-semibold tracking-wide text-lead-500 uppercase">
+              Atualiza
+            </dt>
+            <dd className="mt-0.5 truncate text-sm font-semibold text-lead-100">
+              {formatReleaseDay(animeData.releaseDay)}
+            </dd>
+          </div>
+        </dl>
+
+        <div className="mt-auto flex items-center justify-between gap-3 pt-4">
+          <span className="flex items-center gap-1.5 text-[11px] text-lead-500">
+            <FiCalendar size={13} />
+            {animeData.favorite ? "Favorito" : "Na coleção"}
+          </span>
+          <button
+            type="button"
+            onClick={() => setEditForm(true, animeData)}
+            className="cursor-pointer text-xs font-semibold text-crimson-300 transition-colors hover:text-crimson-200"
+          >
+            Editar detalhes
+          </button>
+        </div>
+      </article>
+
+      {showMenu && <AnimeContextMenu x={menuCoord.x} y={menuCoord.y} />}
+    </animeCardContext.Provider>
+  );
 }
